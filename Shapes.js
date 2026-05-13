@@ -123,6 +123,33 @@ globalThis.Box2 = class Box2 {
         return this.xMaxYMax;
     }
 
+    get center() {
+        return new Vec2((this.xMin + this.xMax) * .5, (this.yMin + this.yMax) * .5);
+    }
+
+    move(...v) {
+        v = v[0] instanceof Object ? v[0] : new Vec2(...v);
+        this.xMin += v.x;
+        this.xMax += v.x;
+        this.yMin += v.y;
+        this.yMax += v.y;
+        return this;
+    }
+    scaleOrigin(s) {
+        this.xMin *= s;
+        this.xMax *= s;
+        this.yMin *= s;
+        this.yMax *= s;
+        return this;
+    }
+    scaleCenter(s) {
+        let center = this.center;
+        this.xMin = this.xMin * s + center.x * (1 - s);
+        this.xMax = this.xMax * s + center.x * (1 - s);
+        this.yMin = this.yMin * s + center.y * (1 - s);
+        this.yMax = this.yMax * s + center.y * (1 - s);
+        return this;
+    }
 
     get copy() {
         return new Box2(this);
@@ -368,6 +395,40 @@ globalThis.Box3 = class Box3 {
     }
     get rightTopFront() {
         return this.xMinYMinZMin;
+    }
+
+    get center() {
+        return new Vec3((this.xMin + this.xMax) * .5, (this.yMin + this.yMax) * .5, (this.zMin + this.zMax) * .5);
+    }
+
+    move(...v) {
+        v = v[0] instanceof Object ? v[0] : new Vec3(...v);
+        this.xMin += v.x;
+        this.xMax += v.x;
+        this.yMin += v.y;
+        this.yMax += v.y;
+        this.zMin += v.z;
+        this.zMax += v.z;
+        return this;
+    }
+    scaleOrigin(s) {
+        this.xMin *= s;
+        this.xMax *= s;
+        this.yMin *= s;
+        this.yMax *= s;
+        this.zMin *= s;
+        this.zMax *= s;
+        return this;
+    }
+    scaleCenter(s) {
+        let center = this.center;
+        this.xMin = this.xMin * s + center.x * (1 - s);
+        this.xMax = this.xMax * s + center.x * (1 - s);
+        this.yMin = this.yMin * s + center.y * (1 - s);
+        this.yMax = this.yMax * s + center.y * (1 - s);
+        this.zMin = this.zMin * s + center.z * (1 - s);
+        this.zMax = this.zMax * s + center.z * (1 - s);
+        return this;
     }
 
     get copy() {
