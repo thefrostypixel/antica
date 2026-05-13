@@ -92,6 +92,12 @@ globalThis.Renderer = class Renderer extends HTMLCanvasElement {
         this.#internal.freeTextureSlots = new Set(Array.from({length: this.#internal.gl.getParameter(0x8872)}, (_, i) => i));
     }
 
+    static #lastId = 0;
+    #id = ++Renderer.#lastId;
+    get id() {
+        return this.#id;
+    }
+
     gl;
     #internal = {
         renderer: this,
@@ -413,6 +419,47 @@ globalThis.Renderer = class Renderer extends HTMLCanvasElement {
                 textureSampler: src,
                 srcTransform: new Mat3(srcCutout.width / src.width, 0, 0, 0, srcCutout.height / src.height, 0, srcCutout.left / src.width, srcCutout.bottom / src.height, 1),
                 dstTransform: new Mat3(dstCutout.width / dst.width * 2, 0, 0, 0, dstCutout.height / dst.height * 2, 0, dstCutout.left / dst.width * 2 - 1, dstCutout.bottom / dst.height * 2 - 1, 1),
+            },
+            blending,
+        });
+    }
+
+    #coloredCopyProgram;
+    drawColoredCopy(src, dst = this, srcCutout = new Box2(src), dstCutout = new Box2(dst), color = Color.okLab(1), blending = Renderer.Blending.overlay) {
+        if (!this.#coloredCopyProgram) {
+            this.#coloredCopyProgram = this.program(`#version 300 es
+
+            in vec2 pos;
+            uniform mat3 srcTransform;
+            uniform mat3 dstTransform;
+            out vec2 uv;
+
+            void main() {
+                uv = (srcTransform * vec3(pos, 1)).xy;
+                gl_Position = vec4((dstTransform * vec3(pos, 1)).xy, 0, 1);
+            }
+            `, `#version 300 es
+            precision mediump float;
+
+            in vec2 uv;
+            uniform sampler2D textureSampler;
+            uniform vec4 tint;
+            out vec4 color;
+
+            void main() {
+                color = texture(textureSampler, uv).r * tint;
+            }
+            `);
+        }
+        return this.draw({
+            target: dst,
+            program: this.#coloredCopyProgram,
+            mesh: this.boxMesh2D,
+            uniforms: {
+                textureSampler: src,
+                srcTransform: new Mat3(srcCutout.width / src.width, 0, 0, 0, srcCutout.height / src.height, 0, srcCutout.left / src.width, srcCutout.bottom / src.height, 1),
+                dstTransform: new Mat3(dstCutout.width / dst.width * 2, 0, 0, 0, dstCutout.height / dst.height * 2, 0, dstCutout.left / dst.width * 2 - 1, dstCutout.bottom / dst.height * 2 - 1, 1),
+                tint: color,
             },
             blending,
         });
