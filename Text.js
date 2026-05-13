@@ -91,13 +91,13 @@ globalThis.Text = class Text {
     }
 
     get #cacheKey() {
-        return `${this.text}\0${this.size}\0${this.weight}\0${this.font}\0${this.color.L}\0${this.color.a}\0${this.color.b}\0${this.color.alpha}`;
+        return `${this.text ?? ""}\0${this.size ?? 16}\0${this.weight ?? 400}\0${this.font ?? "Helvetica"}\0${this.color?.L ?? .95}\0${this.color?.a ?? 0}\0${this.color?.b ?? 0}\0${this.color?.alpha ?? 1}`;
     }
 
     get #metrics() {
         return (this.cache || {use: (_, creator) => creator()[0]}).use(`TextMetrics\0${this.#cacheKey}`, () => {
-            Text.#context.font = `${this.weight} ${this.size}px ${this.font}`;
-            let measurements = Text.#context.measureText(this.text);
+            Text.#context.font = `${this.weight ?? 400} ${this.size ?? 16}px ${this.font ?? "Helvetica"}`;
+            let measurements = Text.#context.measureText(this.text ?? "");
             let metrics = {};
             metrics.ascent = measurements.fontBoundingBoxAscent;
             metrics.descent = measurements.fontBoundingBoxDescent;
@@ -127,17 +127,17 @@ globalThis.Text = class Text {
 
     monoTexture = renderer => this.cache.use(`TextMonoTexture\0${renderer.id}\0${this.#cacheKey}`, () => {
         Text.#context.clearRect(0, 0, Text.#canvas.width = this.coarse.width, Text.#canvas.height = this.coarse.height);
-        Text.#context.font = `${this.weight} ${this.size}px ${this.font}`;
+        Text.#context.font = `${this.weight ?? 400} ${this.size ?? 16}px ${this.font ?? "Helvetica"}`;
         Text.#context.fillStyle = "#FFF";
-        Text.#context.fillText(this.text, -this.coarse.left, this.coarse.top);
+        Text.#context.fillText(this.text ?? "", -this.coarse.left, this.coarse.top);
         return [renderer.texture(Text.#canvas, Renderer.TextureFormat.R), texture => texture.delete()];
     });
     colorTexture = renderer => this.cache.use(`TextColorTexture\0${renderer.id}\0${this.#cacheKey}`, () => {
         Text.#context.clearRect(0, 0, Text.#canvas.width = this.coarse.width, Text.#canvas.height = this.coarse.height);
-        Text.#context.font = `${this.weight} ${this.size}px ${this.font}`;
-        Text.#context.fillStyle = this.color.hex();
-        Text.#context.fillText(this.text, -this.coarse.left, this.coarse.top);
+        Text.#context.font = `${this.weight ?? 400} ${this.size ?? 16}px ${this.font ?? "Helvetica"}`;
+        Text.#context.fillStyle = (this.color ?? Color.okLab(.95)).hex();
+        Text.#context.fillText(this.text ?? "", -this.coarse.left, this.coarse.top);
         return [renderer.texture(Text.#canvas, Renderer.TextureFormat.sRGBA), texture => texture.delete()];
     });
-    draw = (target, pos = new Vec2(), blending = Renderer.Blending.overlay) => target.renderer.drawColoredCopy(this.monoTexture(target.renderer), target, undefined, this.coarse.copy.move(pos), this.color, blending);
+    draw = (target, pos = new Vec2(), blending = Renderer.Blending.overlay) => target.renderer.drawColoredCopy(this.monoTexture(target.renderer), target, undefined, this.coarse.copy.move(pos), this.color ?? Color.okLab(.95), blending);
 };
