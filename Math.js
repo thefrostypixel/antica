@@ -60,8 +60,9 @@ globalThis.Vec2 = class Vec2 {
     }
 
     set(...v) {
-        this.x = v[0]?.x ?? v[0]?.[0] ?? v[0] ?? 0;
-        this.y = v[0]?.y ?? v[0]?.[1] ?? v[1] ?? 0;
+        v = v.flat(Infinity);
+        this.x = v[0]?.x ?? v[0] ?? 0;
+        this.y = v[0]?.y ?? v[1] ?? 0;
         return this;
     }
     add(...v) {
@@ -184,9 +185,10 @@ globalThis.Vec3 = class Vec3 {
     }
 
     set(...v) {
-        this.x = v[0]?.x ?? v[0]?.[0] ?? v[0] ?? 0;
-        this.y = v[0]?.y ?? v[0]?.[1] ?? v[1] ?? 0;
-        this.z = v[0]?.z ?? v[0]?.[2] ?? v[2] ?? 0;
+        v = v.flat(Infinity);
+        this.x = v[0]?.x ?? v[0] ?? 0;
+        this.y = v[0]?.y ?? v[1] ?? 0;
+        this.z = v[0]?.z ?? v[2] ?? 0;
         return this;
     }
     add(...v) {
@@ -329,10 +331,11 @@ globalThis.Vec4 = class Vec4 {
     }
 
     set(...v) {
-        this.x = v[0]?.x ?? v[0]?.[0] ?? v[0] ?? 0;
-        this.y = v[0]?.y ?? v[0]?.[1] ?? v[1] ?? 0;
-        this.z = v[0]?.z ?? v[0]?.[2] ?? v[2] ?? 0;
-        this.w = v[0]?.w ?? v[0]?.[3] ?? v[3] ?? 0;
+        v = v.flat(Infinity);
+        this.x = v[0]?.x ?? v[0] ?? 0;
+        this.y = v[0]?.y ?? v[1] ?? 0;
+        this.z = v[0]?.z ?? v[2] ?? 0;
+        this.w = v[0]?.w ?? v[3] ?? 0;
         return this;
     }
     add(...v) {
@@ -425,9 +428,86 @@ globalThis.Vec4 = class Vec4 {
     }));
 }));
 
-globalThis.Quat = class Quat {
-    constructor(...q) {
-        this.set(...q);
+globalThis.Rot2 = class Rot2 {
+    static #wrap(n) {
+        return ((+n + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+    }
+
+    constructor(...r) {
+        this.set(...r);
+    }
+
+    #r = 0;
+    get r() {
+        return this.#r;
+    }
+    set r(r) {
+        if (isFinite(r)) {
+            this.#r = Rot2.#wrap(r);
+        }
+    }
+
+    get copy() {
+        return new Rot2(this);
+    }
+    get obj() {
+        return {r: this.r};
+    }
+    get list() {
+        return [this.r];
+    }
+    get mat2() {
+        return new Mat2(Math.cos(this.r), -Math.sin(this.r), Math.sin(this.r), Math.cos(this.r));
+    }
+    get mat3() {
+        return this.mat2.mat3;
+    }
+    get mat4() {
+        return this.mat2.mat4;
+    }
+
+    get up() {
+        return this.mat2.mult(new Vec2(0, 1));
+    }
+    get right() {
+        return this.mat2.mult(new Vec2(1, 0));
+    }
+
+    set(...r) {
+        r = r.flat(Infinity);
+        this.r = r[0]?.x ?? r[0] ?? 0;
+        return this;
+    }
+    add(...r) {
+        r = r[0] instanceof Object ? r[0] : new Rot2(...r);
+        this.r += r.r;
+        return this;
+    }
+    sub(...r) {
+        r = r[0] instanceof Object ? r[0] : new Rot2(...r);
+        this.r -= r.r;
+        return this;
+    }
+    comp(...r) {
+        return this.add(...r);
+    }
+    diff(...r) {
+        r = r[0] instanceof Object ? r[0] : new Rot2(...r);
+        return new Rot2((r.r - this.r + 3 * Math.PI) % (2 * Math.PI) - Math.PI);
+    }
+    lerp(r, t = .5) {
+        this.r += ((r.r - this.r + 3 * Math.PI) % (2 * Math.PI) - Math.PI) * t;
+        return this;
+    }
+};
+
+globalThis.Rot3 = class Rot3 {
+    static #wrap(n) {
+        return ((+n + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+    }
+
+    constructor(...r) {
+        this.set(...r);
     }
 
     #x = 0;
@@ -437,6 +517,7 @@ globalThis.Quat = class Quat {
     set x(x) {
         if (isFinite(x)) {
             this.#x = +x;
+            this.#roll = 0;
         }
     }
 
@@ -447,6 +528,7 @@ globalThis.Quat = class Quat {
     set y(y) {
         if (isFinite(y)) {
             this.#y = +y;
+            this.#roll = 0;
         }
     }
 
@@ -457,36 +539,88 @@ globalThis.Quat = class Quat {
     set z(z) {
         if (isFinite(z)) {
             this.#z = +z;
+            this.#roll = 0;
         }
     }
 
-    #w = 0;
+    #w = 1;
     get w() {
         return this.#w;
     }
     set w(w) {
         if (isFinite(w)) {
             this.#w = +w;
+            this.#roll = 0;
         }
     }
 
+    get #calcYaw() {
+        if (Math.abs(2 * (this.w * this.x - this.y * this.z)) < 1 - 1e-4) {
+            return -Math.atan2(2 * (this.w * this.y + this.z * this.x), 1 - 2 * (this.x * this.x + this.y * this.y));
+        }
+        return Rot3.#wrap(-Math.atan2(-2 * (this.x * this.y - this.w * this.z), 1 - 2 * (this.y * this.y + this.z * this.z)) - this.#roll);
+    }
+    get yaw() {
+        return this.#calcYaw;
+    }
+    set yaw(yaw) {
+        if (isFinite(yaw)) {
+            this.#xyzw(+yaw, this.#calcPitch, this.#calcRoll);
+        }
+    }
+
+    get #calcPitch() {
+        if (Math.abs(2 * (this.w * this.x - this.y * this.z)) < 1 - 1e-4) {
+            return Math.asin(2 * (this.w * this.x - this.y * this.z));
+        }
+        return (this.w * this.x - this.y * this.z > 0 ? .5 : -.5) * Math.PI;
+    }
+    get pitch() {
+        return this.#calcPitch;
+    }
+    set pitch(pitch) {
+        if (isFinite(pitch)) {
+            this.#xyzw(this.#calcYaw, +pitch, this.#calcRoll);
+        }
+    }
+
+    #roll = 0;
+    get #calcRoll() {
+        if (Math.abs(2 * (this.w * this.x - this.y * this.z)) < 1 - 1e-4) {
+            return -Math.atan2(2 * (this.w * this.z + this.x * this.y), 1 - 2 * (this.z * this.z + this.x * this.x));
+        }
+        return this.#roll;
+    }
+    get roll() {
+        return this.#roll;
+    }
+    set roll(roll) {
+        if (isFinite(roll)) {
+            this.#xyzw(this.#calcYaw, this.#calcPitch, this.#roll = Rot3.#wrap(+roll));
+        }
+    }
+
+    #xyzw(yaw, pitch, roll) {
+        let sy = Math.sin(.5 * yaw);
+        let cy = Math.cos(.5 * yaw);
+        let sp = Math.sin(.5 * pitch);
+        let cp = Math.cos(.5 * pitch);
+        let sr = Math.sin(.5 * roll);
+        let cr = Math.cos(.5 * roll);
+        this.#x = sp * cy * cr + cp * sy * sr;
+        this.#y = sp * cy * sr - cp * sy * cr;
+        this.#z = sp * sy * cr - cp * cy * sr;
+        this.#w = cp * cy * cr + sp * sy * sr;
+    }
+
     get copy() {
-        return new Quat(this);
+        return new Rot3(this);
     }
     get obj() {
         return {x: this.x, y: this.y, z: this.z, w: this.w};
     }
     get list() {
         return [this.x, this.y, this.z, this.w];
-    }
-    get quat() {
-        return new Quat(this);
-    }
-    get rot() {
-        if (Math.abs(2 * (this.w * this.x - this.y * this.z)) < 1 - 1e-4) {
-            return new Rot(-Math.atan2(2 * (this.w * this.y + this.z * this.x), 1 - 2 * (this.x * this.x + this.y * this.y)), Math.asin(2 * (this.w * this.x - this.y * this.z)), -Math.atan2(2 * (this.w * this.z + this.x * this.y), 1 - 2 * (this.z * this.z + this.x * this.x)));
-        }
-        return new Rot(-Math.atan2(-2 * (this.x * this.y - this.w * this.z), 1 - 2 * (this.y * this.y + this.z * this.z)), (this.w * this.x - this.y * this.z > 0 ? .5 : -.5) * Math.PI, 0);
     }
     get mat3() {
         return new Mat3(
@@ -500,35 +634,51 @@ globalThis.Quat = class Quat {
     }
 
     get forward() {
-        return this.mat4.mult(new Vec3(0, 0, 1));
+        return this.mat3.mult(new Vec3(0, 0, 1));
     }
     get up() {
-        return this.mat4.mult(new Vec3(0, 1, 0));
+        return this.mat3.mult(new Vec3(0, 1, 0));
     }
     get right() {
-        return this.mat4.mult(new Vec3(1, 0, 0));
+        return this.mat3.mult(new Vec3(1, 0, 0));
     }
 
-    set(...q) {
-        this.x = q[0]?.x ?? q[0]?.[0] ?? q[0] ?? 0;
-        this.y = q[0]?.y ?? q[0]?.[1] ?? q[1] ?? 0;
-        this.z = q[0]?.z ?? q[0]?.[2] ?? q[2] ?? 0;
-        this.w = q[0]?.w ?? q[0]?.[3] ?? q[3] ?? 0;
+    set(...r) {
+        r = r.flat(Infinity);
+        if (typeof r[0] == "object" && ("x" in r[0] || "y" in r[0] || "z" in r[0] || "w" in r[0]) || r.length == 4) {
+            let roll = this.#roll;
+            this.x = r[0]?.x ?? r[0];
+            this.y = r[0]?.y ?? r[1];
+            this.z = r[0]?.z ?? r[2];
+            this.w = r[0]?.w ?? r[3];
+            if (Math.abs(2 * (this.w * this.x - this.y * this.z)) > 1 - 1e-4) {
+                this.#roll = isFinite(r[0]?.roll ?? r[4] ?? roll) ? Rot3.#wrap(r[0]?.roll ?? r[4] ?? roll) : 0;
+            }
+        } else if (typeof r[0] == "object" && ("yaw" in r[0] || "pitch" in r[0] || "roll" in r[0]) || r.length < 4) {
+            this.#xyzw(isFinite(r[0]?.yaw ?? r[0]) ? r[0]?.yaw ?? r[0] : 0, isFinite(r[0]?.pitch ?? r[1]) ? r[0]?.pitch ?? r[1] : 0, this.#roll = isFinite(r[0]?.roll ?? r[2]) ? Rot3.#wrap(r[0]?.roll ?? r[2]) : 0);
+        }
         return this;
     }
-    mult(...q) {
-        q = q[0] instanceof Object ? q[0] : new Quat(...q);
+    mult(...r) {
+        r = r[0] instanceof Object ? r[0] : new Rot3(...r);
         return this.set(
-            this.x * q.w + this.w * q.x + this.y * q.z - this.z * q.y,
-            this.y * q.w + this.w * q.y + this.z * q.x - this.x * q.z,
-            this.z * q.w + this.w * q.z + this.x * q.y - this.y * q.x,
-            this.w * q.w - this.x * q.x - this.y * q.y - this.z * q.z,
+            this.x * r.w + this.w * r.x + this.y * r.z - this.z * r.y,
+            this.y * r.w + this.w * r.y + this.z * r.x - this.x * r.z,
+            this.z * r.w + this.w * r.z + this.x * r.y - this.y * r.x,
+            this.w * r.w - this.x * r.x - this.y * r.y - this.z * r.z,
         ).#normalize();
     }
-    lerp(q, t = .5) {
-        let cos = this.w * q.w + this.x * q.x + this.y * q.y + this.z * q.z;
+    comp(...r) {
+        return this.mult(...r);
+    }
+    diff(...r) {
+        r = r[0] instanceof Object ? r[0] : new Rot3(...r);
+        return this.copy.conjugate().mult(r);
+    }
+    lerp(r, t = .5) {
+        let cos = this.w * r.w + this.x * r.x + this.y * r.y + this.z * r.z;
         if (cos < 0) {
-            q = new Quat(-q.x, -q.y, -q.z, -q.w);
+            r = new Rot3(-r.x, -r.y, -r.z, -r.w);
             cos = -cos;
         }
         if (cos < 1) {
@@ -539,10 +689,11 @@ globalThis.Quat = class Quat {
                 b = Math.sin(t * Math.acos(cos)) / (1 - cos ** 2) ** .5;
             }
             this.set(
-                this.x * a + q.x * b,
-                this.y * a + q.y * b,
-                this.z * a + q.z * b,
-                this.w * a + q.w * b,
+                this.x * a + r.x * b,
+                this.y * a + r.y * b,
+                this.z * a + r.z * b,
+                this.w * a + r.w * b,
+                this.roll + Rot3.#wrap(r.roll - this.roll) * t,
             );
         }
         return this;
@@ -564,182 +715,27 @@ globalThis.Quat = class Quat {
     }
 
     conjugate() {
+        this.#roll = -this.#roll;
         return this.set(-this.x, -this.y, -this.z, this.w);
     }
 
     #normalize() {
         let l = (this.x ** 2 + this.y ** 2 + this.z ** 2 + this.w ** 2) ** .5;
         if (l) {
+            let roll = this.#roll;
             this.x /= l;
             this.y /= l;
             this.z /= l;
             this.w /= l;
+            if (Math.abs(2 * (this.w * this.x - this.y * this.z)) > 1 - 1e-4) {
+                this.#roll = roll;
+            }
         } else {
             this.set(0, 0, 0, 1);
         }
         return this;
     }
 };
-
-globalThis.Rot = class Rot {
-    constructor(...d) {
-        this.set(...d);
-    }
-
-    #yaw = 0;
-    get yaw() {
-        return this.#yaw;
-    }
-    set yaw(yaw) {
-        if (isFinite(yaw)) {
-            this.#yaw = (yaw % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
-        }
-    }
-    
-    get yawDeg() {
-        return this.yaw * 180 / Math.PI;
-    }
-    set yawDeg(yawDeg) {
-        this.yaw = yawDeg * Math.PI / 180;
-    }
-
-    #pitch = 0;
-    get pitch() {
-        return this.#pitch;
-    }
-    set pitch(pitch) {
-        if (isFinite(pitch)) {
-            this.#pitch = pitch > 0 ? Math.min(pitch, Math.PI) : Math.max(pitch, -Math.PI);
-        }
-    }
-
-    get pitchDeg() {
-        return this.pitch * 180 / Math.PI;
-    }
-    set pitchDeg(pitchDeg) {
-        this.pitch = pitchDeg * Math.PI / 180;
-    }
-
-    #roll = 0;
-    get roll() {
-        return this.#roll;
-    }
-    set roll(roll) {
-        if (isFinite(roll)) {
-            this.#roll = (roll % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
-        }
-    }
-    
-    get rollDeg() {
-        return this.roll * 180 / Math.PI;
-    }
-    set rollDeg(rollDeg) {
-        this.roll = rollDeg * Math.PI / 180;
-    }
-
-    get copy() {
-        return new Vec3(this);
-    }
-    get obj() {
-        return {yaw: this.yaw, pitch: this.pitch, roll: this.roll};
-    }
-    get list() {
-        return [this.yaw, this.pitch, this.roll];
-    }
-    get quat() {
-        let sy = Math.sin(.5 * this.yaw);
-        let cy = Math.cos(.5 * this.yaw);
-        let sp = Math.sin(.5 * this.pitch);
-        let cp = Math.cos(.5 * this.pitch);
-        let sr = Math.sin(.5 * this.roll);
-        let cr = Math.cos(.5 * this.roll);
-        return new Quat(
-            sp * cy * cr + cp * sy * sr,
-            sp * cy * sr - cp * sy * cr,
-            sp * sy * cr - cp * cy * sr,
-            cp * cy * cr + sp * sy * sr,
-        );
-    }
-    get rot() {
-        return new Rot(this);
-    }
-    get mat3() {
-        return this.quat.mat3;
-    }
-    get mat4() {
-        return this.quat.mat4;
-    }
-
-    get forward() {
-        return this.quat.forward;
-    }
-    get up() {
-        return this.quat.up;
-    }
-    get right() {
-        return this.quat.right;
-    }
-    get horizontalForward() {
-        return new Vec3(-Math.cos(this.yaw), 0, Math.sin(this.yaw));
-    }
-    get horizontalRight() {
-        return new Vec3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
-    }
-
-    set(...d) {
-        this.yaw = d[0]?.yaw ?? d[0]?.[0] ?? d[0] ?? 0;
-        this.pitch = d[0]?.pitch ?? d[0]?.[1] ?? d[1] ?? 0;
-        this.roll = d[0]?.roll ?? d[0]?.[2] ?? d[2] ?? 0;
-        return this;
-    }
-};
-
-// TODO Make a Rot3 class with Quat and Rot merged.
-
-// TODO Make a Rot2 class.
-
-/*queueMicrotask(() => {
-    let testRot = (yaw = 0, pitch = 0, roll = 0, forward = "Z+", up = "Y+", right = "X+") => {
-        let rot = new Rot(yaw * Math.PI / 180, pitch * Math.PI / 180, roll * Math.PI / 180);
-        let wish = {forward, up, right};
-        let check = name => {
-            let axis = Math.abs(rot[name].x) > .5 ? "x" : Math.abs(rot[name].y) > .5 ? "y" : "z";
-            let got = `${axis.toUpperCase()}${rot[name][axis] > 0 ? "+" : "-"}`;
-            return wish[name] == got ? "✓" : got;
-        };
-        console.log(`${yaw}° ${pitch}° ${roll}°    ${forward} ${up} ${right}    ${check("forward")} ${check("up")} ${check("right")}`);
-    };
-
-    testRot(0, 0, 0, "Z+", "Y+", "X+");
-    testRot(90, 0, 0, "X-", "Y+", "Z+");
-    testRot(180, 0, 0, "Z-", "Y+", "X-");
-    testRot(270, 0, 0, "X+", "Y+", "Z-");
-
-    testRot(0, 90, 0, "Y-", "Z+", "X+");
-    testRot(90, 90, 0, "Y-", "X-", "Z+");
-    testRot(180, 90, 0, "Y-", "Z-", "X-");
-    testRot(270, 90, 0, "Y-", "X+", "Z-");
-
-    testRot(0, -90, 0, "Y+", "Z-", "X+");
-    testRot(90, -90, 0, "Y+", "X+", "Z+");
-    testRot(180, -90, 0, "Y+", "Z+", "X-");
-    testRot(270, -90, 0, "Y+", "X-", "Z-");
-
-    testRot(0, 0, 90, "Z+", "X+", "Y-");
-    testRot(90, 0, 90, "X-", "Z+", "Y-");
-    testRot(180, 0, 90, "Z-", "X-", "Y-");
-    testRot(270, 0, 90, "X+", "Z-", "Y-");
-
-    testRot(0, 0, -90, "Z+", "X-", "Y+");
-    testRot(90, 0, -90, "X-", "Z-", "Y+");
-    testRot(180, 0, -90, "Z-", "X+", "Y+");
-    testRot(270, 0, -90, "X+", "Z+", "Y+");
-
-    testRot(0, 90, 90, "Y-", "X+", "Z-");
-    testRot(90, 90, 90, "Y-", "Z+", "X+");
-    testRot(180, 90, 90, "Y-", "X-", "Z+");
-    testRot(270, 90, 90, "Y-", "Z-", "X-");
-});*/
 
 globalThis.Mat2 = class Mat2 {
     constructor(...m) {
@@ -756,16 +752,6 @@ globalThis.Mat2 = class Mat2 {
         }
     }
 
-    #xy = 0;
-    get xy() {
-        return this.#xy;
-    }
-    set xy(xy) {
-        if (isFinite(xy)) {
-            this.#xy = +xy;
-        }
-    }
-
     #yx = 0;
     get yx() {
         return this.#yx;
@@ -773,6 +759,16 @@ globalThis.Mat2 = class Mat2 {
     set yx(yx) {
         if (isFinite(yx)) {
             this.#yx = +yx;
+        }
+    }
+
+    #xy = 0;
+    get xy() {
+        return this.#xy;
+    }
+    set xy(xy) {
+        if (isFinite(xy)) {
+            this.#xy = +xy;
         }
     }
 
@@ -806,15 +802,16 @@ globalThis.Mat2 = class Mat2 {
     }
 
     set(...m) {
-        this.xx ??= m[0]?.xx ?? m[0]?.[0]?.[0] ?? m[0]?.[0] ?? m[0];
-        this.xy ??= m[0]?.xy ?? m[0]?.[0]?.[1] ?? m[0]?.[1] ?? m[1];
-        this.yx ??= m[0]?.yx ?? m[0]?.[1]?.[0] ?? m[1]?.[0] ?? m[2];
-        this.yy ??= m[0]?.yy ?? m[0]?.[1]?.[1] ?? m[1]?.[1] ?? m[3];
+        m = m.flat(Infinity);
+        this.xx = m[0]?.xx ?? m[0];
+        this.yx = m[0]?.yx ?? m[1];
+        this.xy = m[0]?.xy ?? m[2];
+        this.yy = m[0]?.yy ?? m[3];
         return this;
     }
 
     mult(o) {
-        if ("xx" in o) {
+        if (o instanceof Mat2) {
             let result = new Mat2();
             for (let a of ["x", "y"]) {
                 for (let b of ["x", "y"]) {
@@ -822,7 +819,7 @@ globalThis.Mat2 = class Mat2 {
                 }
             }
             return result;
-        } else if ("y" in o) {
+        } else if (o instanceof Vec2) {
             return new Vec2(
                 this.xx * o.x + this.xy * o.y,
                 this.yx * o.x + this.yy * o.y,
@@ -869,26 +866,6 @@ globalThis.Mat3 = class Mat3 {
         }
     }
 
-    #xy = 0;
-    get xy() {
-        return this.#xy;
-    }
-    set xy(xy) {
-        if (isFinite(xy)) {
-            this.#xy = +xy;
-        }
-    }
-
-    #xz = 0;
-    get xz() {
-        return this.#xz;
-    }
-    set xz(xz) {
-        if (isFinite(xz)) {
-            this.#xz = +xz;
-        }
-    }
-
     #yx = 0;
     get yx() {
         return this.#yx;
@@ -896,26 +873,6 @@ globalThis.Mat3 = class Mat3 {
     set yx(yx) {
         if (isFinite(yx)) {
             this.#yx = +yx;
-        }
-    }
-
-    #yy = 1;
-    get yy() {
-        return this.#yy;
-    }
-    set yy(yy) {
-        if (isFinite(yy)) {
-            this.#yy = +yy;
-        }
-    }
-
-    #yz = 0;
-    get yz() {
-        return this.#yz;
-    }
-    set yz(yz) {
-        if (isFinite(yz)) {
-            this.#yz = +yz;
         }
     }
 
@@ -929,6 +886,26 @@ globalThis.Mat3 = class Mat3 {
         }
     }
 
+    #xy = 0;
+    get xy() {
+        return this.#xy;
+    }
+    set xy(xy) {
+        if (isFinite(xy)) {
+            this.#xy = +xy;
+        }
+    }
+
+    #yy = 1;
+    get yy() {
+        return this.#yy;
+    }
+    set yy(yy) {
+        if (isFinite(yy)) {
+            this.#yy = +yy;
+        }
+    }
+
     #zy = 0;
     get zy() {
         return this.#zy;
@@ -936,6 +913,26 @@ globalThis.Mat3 = class Mat3 {
     set zy(zy) {
         if (isFinite(zy)) {
             this.#zy = +zy;
+        }
+    }
+
+    #xz = 0;
+    get xz() {
+        return this.#xz;
+    }
+    set xz(xz) {
+        if (isFinite(xz)) {
+            this.#xz = +xz;
+        }
+    }
+
+    #yz = 0;
+    get yz() {
+        return this.#yz;
+    }
+    set yz(yz) {
+        if (isFinite(yz)) {
+            this.#yz = +yz;
         }
     }
 
@@ -969,20 +966,21 @@ globalThis.Mat3 = class Mat3 {
     }
 
     set(...m) {
-        this.xx ??= m[0]?.xx ?? m[0]?.[0]?.[0] ?? m[0]?.[0] ?? m[0];
-        this.xy ??= m[0]?.xy ?? m[0]?.[0]?.[1] ?? m[0]?.[1] ?? m[1];
-        this.xz ??= m[0]?.xz ?? m[0]?.[0]?.[2] ?? m[0]?.[2] ?? m[2];
-        this.yx ??= m[0]?.yx ?? m[0]?.[1]?.[0] ?? m[1]?.[0] ?? m[3];
-        this.yy ??= m[0]?.yy ?? m[0]?.[1]?.[1] ?? m[1]?.[1] ?? m[4];
-        this.yz ??= m[0]?.yz ?? m[0]?.[1]?.[2] ?? m[1]?.[2] ?? m[5];
-        this.zx ??= m[0]?.zx ?? m[0]?.[2]?.[0] ?? m[2]?.[0] ?? m[6];
-        this.zy ??= m[0]?.zy ?? m[0]?.[2]?.[1] ?? m[2]?.[1] ?? m[7];
-        this.zz ??= m[0]?.zz ?? m[0]?.[2]?.[2] ?? m[2]?.[2] ?? m[8];
+        m = m.flat(Infinity);
+        this.xx = m[0]?.xx ?? m[0];
+        this.yx = m[0]?.yx ?? m[1];
+        this.zx = m[0]?.zx ?? m[2];
+        this.xy = m[0]?.xy ?? m[3];
+        this.yy = m[0]?.yy ?? m[4];
+        this.zy = m[0]?.zy ?? m[5];
+        this.xz = m[0]?.xz ?? m[6];
+        this.yz = m[0]?.yz ?? m[7];
+        this.zz = m[0]?.zz ?? m[8];
         return this;
     }
 
     mult(o) {
-        if ("xx" in o) {
+        if (Mat3) {
             let result = new Mat3();
             for (let a of ["x", "y", "z"]) {
                 for (let b of ["x", "y", "z"]) {
@@ -990,7 +988,7 @@ globalThis.Mat3 = class Mat3 {
                 }
             }
             return result;
-        } else if ("z" in o) {
+        } else if (Vec3) {
             return new Vec3(
                 this.xx * o.x + this.xy * o.y + this.xz * o.z,
                 this.yx * o.x + this.yy * o.y + this.yz * o.z,
@@ -1030,7 +1028,7 @@ globalThis.Mat3 = class Mat3 {
 };
 
 globalThis.Mat4 = class Mat4 {
-    static transform(pos = new Vec3(), rot = new Quat(), scale = 1) {
+    static transform(pos = new Vec3(), rot = new Rot3(), scale = 1) {
         let mat = rot.mat4;
         mat.xx *= scale;
         mat.yx *= scale;
@@ -1048,7 +1046,7 @@ globalThis.Mat4 = class Mat4 {
     }
 
     // Z- forward, Y+ up, X+ right, yaw+ right, pitch+ up, roll+ clockwise.
-    static perspective(pos, rot, cam = {fov: .5 * Math.PI, aspect: 16 / 9, near: 1e-3}, aspect) {
+    static perspective(pos = new Vec3(), rot = new Rot3(), cam = {fov: .5 * Math.PI, aspect: 16 / 9, near: 1e-3}, aspect) {
         let projection = new Mat4(
             (aspect > (cam.aspect || 16 / 9) ? 1 : (cam.aspect || 16 / 9) / aspect) / Math.tan(.5 * (cam.fov || .5 * Math.PI)), 0, 0, 0,
             0, (aspect > (cam.aspect || 16 / 9) ? aspect : cam.aspect || 16 / 9) / Math.tan(.5 * (cam.fov || .5 * Math.PI)), 0, 0,
@@ -1247,27 +1245,28 @@ globalThis.Mat4 = class Mat4 {
     }
 
     set(...m) {
-        this.xx = m[0]?.xx ?? m[0]?.[0]?.[0] ?? m[0]?.[0] ?? m[0];
-        this.yx = m[0]?.yx ?? m[0]?.[1]?.[0] ?? m[1]?.[0] ?? m[1];
-        this.zx = m[0]?.zx ?? m[0]?.[2]?.[0] ?? m[2]?.[0] ?? m[2];
-        this.wx = m[0]?.wx ?? m[0]?.[3]?.[0] ?? m[3]?.[0] ?? m[3];
-        this.xy = m[0]?.xy ?? m[0]?.[0]?.[1] ?? m[0]?.[1] ?? m[4];
-        this.yy = m[0]?.yy ?? m[0]?.[1]?.[1] ?? m[1]?.[1] ?? m[5];
-        this.zy = m[0]?.zy ?? m[0]?.[2]?.[1] ?? m[2]?.[1] ?? m[6];
-        this.wy = m[0]?.wy ?? m[0]?.[3]?.[1] ?? m[3]?.[1] ?? m[7];
-        this.xz = m[0]?.xz ?? m[0]?.[0]?.[2] ?? m[0]?.[2] ?? m[8];
-        this.yz = m[0]?.yz ?? m[0]?.[1]?.[2] ?? m[1]?.[2] ?? m[9];
-        this.zz = m[0]?.zz ?? m[0]?.[2]?.[2] ?? m[2]?.[2] ?? m[10];
-        this.wz = m[0]?.wz ?? m[0]?.[3]?.[2] ?? m[3]?.[2] ?? m[11];
-        this.xw = m[0]?.xw ?? m[0]?.[0]?.[3] ?? m[0]?.[3] ?? m[12];
-        this.yw = m[0]?.yw ?? m[0]?.[1]?.[3] ?? m[1]?.[3] ?? m[13];
-        this.zw = m[0]?.zw ?? m[0]?.[2]?.[3] ?? m[2]?.[3] ?? m[14];
-        this.ww = m[0]?.ww ?? m[0]?.[3]?.[3] ?? m[3]?.[3] ?? m[15];
+        m = m.flat(Infinity);
+        this.xx = m[0]?.xx ?? m[0];
+        this.yx = m[0]?.yx ?? m[1];
+        this.zx = m[0]?.zx ?? m[2];
+        this.wx = m[0]?.wx ?? m[3];
+        this.xy = m[0]?.xy ?? m[4];
+        this.yy = m[0]?.yy ?? m[5];
+        this.zy = m[0]?.zy ?? m[6];
+        this.wy = m[0]?.wy ?? m[7];
+        this.xz = m[0]?.xz ?? m[8];
+        this.yz = m[0]?.yz ?? m[9];
+        this.zz = m[0]?.zz ?? m[10];
+        this.wz = m[0]?.wz ?? m[11];
+        this.xw = m[0]?.xw ?? m[12];
+        this.yw = m[0]?.yw ?? m[13];
+        this.zw = m[0]?.zw ?? m[14];
+        this.ww = m[0]?.ww ?? m[15];
         return this;
     }
 
     mult(o) {
-        if ("xx" in o) {
+        if (o instanceof Mat4) {
             let result = new Mat4();
             for (let a of ["x", "y", "z", "w"]) {
                 for (let b of ["x", "y", "z", "w"]) {
@@ -1275,19 +1274,19 @@ globalThis.Mat4 = class Mat4 {
                 }
             }
             return result;
-        } else if ("w" in o) {
-            return new Vec4(
-                this.xx * o.x + this.xy * o.y + this.xz * o.z + this.xw * o.w,
-                this.yx * o.x + this.yy * o.y + this.yz * o.z + this.yw * o.w,
-                this.zx * o.x + this.zy * o.y + this.zz * o.z + this.zw * o.w,
-                this.wx * o.x + this.wy * o.y + this.wz * o.z + this.ww * o.w,
-            );
-        } else if ("z" in o) {
+        } else if (o instanceof Vec3) {
             let w = this.wx * o.x + this.wy * o.y + this.wz * o.z + this.ww;
             return new Vec3(
                 (this.xx * o.x + this.xy * o.y + this.xz * o.z + this.xw) / w,
                 (this.yx * o.x + this.yy * o.y + this.yz * o.z + this.yw) / w,
                 (this.zx * o.x + this.zy * o.y + this.zz * o.z + this.zw) / w,
+            );
+        } else if (o instanceof Vec4) {
+            return new Vec4(
+                this.xx * o.x + this.xy * o.y + this.xz * o.z + this.xw * o.w,
+                this.yx * o.x + this.yy * o.y + this.yz * o.z + this.yw * o.w,
+                this.zx * o.x + this.zy * o.y + this.zz * o.z + this.zw * o.w,
+                this.wx * o.x + this.wy * o.y + this.wz * o.z + this.ww * o.w,
             );
         }
     }
@@ -1328,88 +1327,5 @@ globalThis.Mat4 = class Mat4 {
             );
         }
         return this.set(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-};
-
-globalThis.Rect = class Rect {
-    constructor(...r) {
-        this.set(...r);
-    }
-
-    #left = 0;
-    get left() {
-        return this.#left;
-    }
-    set left(left) {
-        if (isFinite(left)) {
-            this.#left = +left;
-        }
-    }
-
-    #right = 0;
-    get right() {
-        return this.#right;
-    }
-    set right(right) {
-        if (isFinite(right)) {
-            this.#right = +right;
-        }
-    }
-
-    #top = 0;
-    get top() {
-        return this.#top;
-    }
-    set top(top) {
-        if (isFinite(top)) {
-            this.#top = +top;
-        }
-    }
-
-    #bottom = 0;
-    get bottom() {
-        return this.#bottom;
-    }
-    set bottom(bottom) {
-        if (isFinite(bottom)) {
-            this.#bottom = +bottom;
-        }
-    }
-
-    get width() {
-        return this.right - this.left;
-    }
-    set width(width) {
-        this.right = this.left + width;
-    }
-
-    get height() {
-        return this.bottom - this.top;
-    }
-    set height(height) {
-        this.bottom = this.top + height;
-    }
-
-    get topLeft() {
-        return new Vec2(this.left, this.pos);
-    }
-    get bottomLeft() {
-        return new Vec2(this.left, this.bottom);
-    }
-    get topRight() {
-        return new Vec2(this.right, this.top);
-    }
-    get bottomRight() {
-        return new Vec2(this.right, this.bottom);
-    }
-
-    get copy() {
-        return new Rect(this);
-    }
-    get obj() {
-        return {left: this.left, right: this.right, top: this.top, bottom: this.bottom};
-    }
-    get list() {
-        return [this.left, this.right, this.top, this.bottom];
     }
 };
