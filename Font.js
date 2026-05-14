@@ -13,6 +13,7 @@ globalThis.Font = class Font {
         this.set(...font);
     }
 
+    #size = undefined;
     get size() {
         return this.#size;
     }
