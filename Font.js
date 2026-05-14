@@ -9,21 +9,10 @@ globalThis.Font = class Font {
     static #canvas = new OffscreenCanvas(0, 0);
     static #context = this.#canvas.getContext("2d");
 
-    constructor(...text) {
-        this.set(...text);
+    constructor(...font) {
+        this.set(...font);
     }
 
-    #text = undefined;
-    get text() {
-        return this.#text;
-    }
-    set text(text) {
-        if (text == undefined || typeof text == "string") {
-            this.#text = text ?? undefined;
-        }
-    }
-
-    #size = undefined;
     get size() {
         return this.#size;
     }
@@ -77,12 +66,12 @@ globalThis.Font = class Font {
         return new Text(this);
     }
 
-    set(...text) {
-        text.forEach(text => {
-            if (text instanceof Object) {
-                for (let setting of ["text", "size", "weight", "font", "color", "cache"]) {
-                    if (text[setting] != undefined) {
-                        this[setting] = text[setting];
+    set(...font) {
+        font.forEach(font => {
+            if (font instanceof Object) {
+                for (let setting of ["size", "weight", "font", "color", "cache"]) {
+                    if (font[setting] != undefined) {
+                        this[setting] = font[setting];
                     }
                 }
             }
@@ -90,11 +79,9 @@ globalThis.Font = class Font {
         return this;
     }
 
-    get #cacheKey() {
-        return `${this.size ?? 16}\0${this.weight ?? 400}\0${this.family ?? "Helvetica"}\0${this.color?.L ?? .95}\0${this.color?.a ?? 0}\0${this.color?.b ?? 0}\0${this.color?.alpha ?? 1}`;
-    }
+    #cacheKey = () => `${this.size ?? 16}\0${this.weight ?? 400}\0${this.family ?? "Helvetica"}\0${this.color?.L ?? .95}\0${this.color?.a ?? 0}\0${this.color?.b ?? 0}\0${this.color?.alpha ?? 1}`;
 
-    #metrics = text => (this.cache || {use: (_, creator) => creator()[0]}).use(`TextMetrics\0${text}\0${this.#cacheKey}`, () => {
+    #metrics = text => (this.cache || {use: (_, creator) => creator()[0]}).use(`TextMetrics\0${text}\0${this.#cacheKey()}`, () => {
         Font.#context.font = `${this.weight ?? 400} ${this.size ?? 16}px ${this.family ?? "Helvetica"}`;
         let measurements = Font.#context.measureText(text ?? "");
         let metrics = {};
@@ -119,14 +106,14 @@ globalThis.Font = class Font {
     fine = text => this.#metrics(text).fine.copy;
     coarse = text => this.#metrics(text).coarse.copy;
 
-    monoTexture = (renderer, text = "") => this.cache.use(`TextMonoTexture\0${renderer.id}\0${text}\0${this.#cacheKey}`, () => {
+    monoTexture = (renderer, text = "") => this.cache.use(`TextMonoTexture\0${renderer.id}\0${text}\0${this.#cacheKey()}`, () => {
         Font.#context.clearRect(0, 0, Font.#canvas.width = this.coarse(text).width, Font.#canvas.height = this.coarse(text).height);
         Font.#context.font = `${this.weight ?? 400} ${this.size ?? 16}px ${this.family ?? "Helvetica"}`;
         Font.#context.fillStyle = "#FFF";
         Font.#context.fillText(text ?? "", -this.coarse(text).left, this.coarse(text).top);
         return [renderer.texture(Font.#canvas, Renderer.TextureFormat.R), texture => texture.delete()];
     });
-    colorTexture = (renderer, text = "") => this.cache.use(`TextColorTexture\0${renderer.id}\0${text}\0${this.#cacheKey}`, () => {
+    colorTexture = (renderer, text = "") => this.cache.use(`TextColorTexture\0${renderer.id}\0${text}\0${this.#cacheKey()}`, () => {
         Font.#context.clearRect(0, 0, Font.#canvas.width = this.coarse(text).width, Font.#canvas.height = this.coarse(text).height);
         Font.#context.font = `${this.weight ?? 400} ${this.size ?? 16}px ${this.family ?? "Helvetica"}`;
         Font.#context.fillStyle = (this.color ?? Color.okLab(.95)).hex();
