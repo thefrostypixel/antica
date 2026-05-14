@@ -5,6 +5,7 @@ globalThis.Box2 = class Box2 {
         this.set(...r);
     }
 
+
     #xMin = 0;
     get xMin() {
         return this.#xMin;
@@ -69,6 +70,78 @@ globalThis.Box2 = class Box2 {
         this.yMax = top;
     }
 
+    get min() {
+        return new Vec2(this.xMin, this.yMin);
+    }
+    set min(min) {
+        this.xMin = min.x;
+        this.yMin = min.y;
+    }
+    get max() {
+        return new Vec2(this.xMax, this.yMax);
+    }
+    set max(max) {
+        this.xMax = max.x;
+        this.yMax = max.y;
+    }
+
+    get xMinYMin() {
+        return new Vec2(this.xMin, this.yMin);
+    }
+    set xMinYMin(xMinYMin) {
+        this.xMin = xMinYMin.x;
+        this.yMin = xMinYMin.y;
+    }
+    get leftBottom() {
+        return this.xMinYMin;
+    }
+    set leftBottom(leftBottom) {
+        this.xMinYMin = leftBottom;
+    }
+
+    get xMaxYMin() {
+        return new Vec2(this.xMax, this.yMin);
+    }
+    set xMaxYMin(xMaxYMin) {
+        this.xMax = xMaxYMin.x;
+        this.yMin = xMaxYMin.y;
+    }
+    get topBottom() {
+        return this.xMaxYMin;
+    }
+    set topBottom(topBottom) {
+        this.xMaxYMin = topBottom;
+    }
+
+    get xMinYMax() {
+        return new Vec2(this.xMin, this.yMax);
+    }
+    set xMinYMax(xMinYMax) {
+        this.xMin = xMinYMax.x;
+        this.yMax = xMinYMax.y;
+    }
+    get leftTop() {
+        return this.xMinYMax;
+    }
+    set leftTop(leftTop) {
+        this.xMinYMax = leftTop;
+    }
+
+    get xMaxYMax() {
+        return new Vec2(this.xMax, this.yMax);
+    }
+    set xMaxYMax(xMaxYMax) {
+        this.xMax = xMaxYMax.x;
+        this.yMax = xMaxYMax.y;
+    }
+    get rightTop() {
+        return this.xMaxYMax;
+    }
+    set rightTop(rightTop) {
+        this.xMaxYMax = rightTop;
+    }
+
+
     get xSize() {
         return this.xMax - this.xMin;
     }
@@ -95,37 +168,37 @@ globalThis.Box2 = class Box2 {
         this.ySize = height;
     }
 
-    get xMinYMin() {
-        return new Vec2(this.xMin, this.yMin);
+    get size() {
+        return new Vec2(this.xSize, this.ySize);
     }
-    get leftBottom() {
-        return this.xMinYMin;
-    }
-
-    get xMaxYMin() {
-        return new Vec2(this.xMax, this.yMin);
-    }
-    get topBottom() {
-        return this.xMaxYMin;
+    set size(size) {
+        this.xSize = size.x;
+        this.ySize = size.y;
     }
 
-    get xMinYMax() {
-        return new Vec2(this.xMin, this.yMax);
+
+    get xCenter() {
+        return (this.xMin + this.xMax) * .5;
     }
-    get leftTop() {
-        return this.xMinYMax;
+    set xCenter(xCenter) {
+        let diff = xCenter - this.xCenter;
+        this.xMin += diff;
+        this.xMax += diff;
     }
 
-    get xMaxYMax() {
-        return new Vec2(this.xMax, this.yMax);
+    get yCenter() {
+        return (this.yMin + this.yMax) * .5;
     }
-    get rightTop() {
-        return this.xMaxYMax;
+    set yCenter(yCenter) {
+        let diff = yCenter - this.yCenter;
+        this.yMin += diff;
+        this.yMax += diff;
     }
 
     get center() {
-        return new Vec2((this.xMin + this.xMax) * .5, (this.yMin + this.yMax) * .5);
+        return new Vec2(this.xCenter, this.yCenter);
     }
+
 
     move(...v) {
         v = v[0] instanceof Object ? v[0] : new Vec2(...v);
@@ -205,6 +278,7 @@ globalThis.Box3 = class Box3 {
     constructor(...r) {
         this.set(...r);
     }
+
 
     #xMin = 0;
     get xMin() {
@@ -302,6 +376,144 @@ globalThis.Box3 = class Box3 {
         this.zMax = front;
     }
 
+    get min() {
+        return new Vec3(this.xMin, this.yMin, this.zMin);
+    }
+    set min(min) {
+        this.xMin = min.x;
+        this.yMin = min.y;
+        this.zMin = min.z;
+    }
+    get max() {
+        return new Vec3(this.xMax, this.yMax, this.zMax);
+    }
+    set max(max) {
+        this.xMax = max.x;
+        this.yMax = max.y;
+        this.zMax = max.z;
+    }
+
+    get xMinYMinZMin() {
+        return new Vec3(this.xMin, this.yMin, this.zMin);
+    }
+    set xMinYMinZMin(xMinYMinZMin) {
+        this.xMin = xMinYMinZMin.x;
+        this.yMin = xMinYMinZMin.y;
+        this.zMin = xMinYMinZMin.z;
+    }
+    get leftBottomBack() {
+        return this.xMinYMinZMin;
+    }
+    set leftBottomBack(leftBottomBack) {
+        this.xMinYMinZMin = leftBottomBack;
+    }
+
+    get xMaxYMinZMin() {
+        return new Vec3(this.xMax, this.yMin, this.zMin);
+    }
+    set xMaxYMinZMin(xMaxYMinZMin) {
+        this.xMax = xMaxYMinZMin.x;
+        this.yMin = xMaxYMinZMin.y;
+        this.zMin = xMaxYMinZMin.z;
+    }
+    get rightBottomBack() {
+        return this.xMinYMinZMin;
+    }
+    set rightBottomBack(rightBottomBack) {
+        this.xMaxYMinZMin = rightBottomBack;
+    }
+
+    get xMinYMaxZMin() {
+        return new Vec3(this.xMin, this.yMax, this.zMin);
+    }
+    set xMinYMaxZMin(xMinYMaxZMin) {
+        this.xMin = xMinYMaxZMin.x;
+        this.yMax = xMinYMaxZMin.y;
+        this.zMin = xMinYMaxZMin.z;
+    }
+    get leftTopBack() {
+        return this.xMinYMinZMin;
+    }
+    set leftTopBack(leftTopBack) {
+        this.xMinYMaxZMin = leftTopBack;
+    }
+
+    get xMaxYMaxZMin() {
+        return new Vec3(this.xMax, this.yMax, this.zMin);
+    }
+    set xMaxYMaxZMin(xMaxYMaxZMin) {
+        this.xMax = xMaxYMaxZMin.x;
+        this.yMax = xMaxYMaxZMin.y;
+        this.zMin = xMaxYMaxZMin.z;
+    }
+    get rightTopBack() {
+        return this.xMinYMinZMin;
+    }
+    set rightTopBack(rightTopBack) {
+        this.xMaxYMaxZMin = rightTopBack;
+    }
+
+    get xMinYMinZMax() {
+        return new Vec3(this.xMin, this.yMin, this.zMax);
+    }
+    set xMinYMinZMax(xMinYMinZMax) {
+        this.xMin = xMinYMinZMax.x;
+        this.yMin = xMinYMinZMax.y;
+        this.zMax = xMinYMinZMax.z;
+    }
+    get leftBottomFront() {
+        return this.xMinYMinZMin;
+    }
+    set leftBottomFront(leftBottomFront) {
+        this.xMinYMinZMax = leftBottomFront;
+    }
+
+    get xMaxYMinZMax() {
+        return new Vec3(this.xMax, this.yMin, this.zMax);
+    }
+    set xMaxYMinZMax(xMaxYMinZMax) {
+        this.xMax = xMaxYMinZMax.x;
+        this.yMin = xMaxYMinZMax.y;
+        this.zMax = xMaxYMinZMax.z;
+    }
+    get rightBottomFront() {
+        return this.xMinYMinZMin;
+    }
+    set rightBottomFront(rightBottomFront) {
+        this.xMaxYMinZMax = rightBottomFront;
+    }
+
+    get xMinYMaxZMax() {
+        return new Vec3(this.xMin, this.yMax, this.zMax);
+    }
+    set xMinYMaxZMax(xMinYMaxZMax) {
+        this.xMin = xMinYMaxZMax.x;
+        this.yMax = xMinYMaxZMax.y;
+        this.zMax = xMinYMaxZMax.z;
+    }
+    get leftTopFront() {
+        return this.xMinYMinZMin;
+    }
+    set leftTopFront(leftTopFront) {
+        this.xMinYMaxZMax = leftTopFront;
+    }
+
+    get xMaxYMaxZMax() {
+        return new Vec3(this.xMax, this.yMax, this.zMax);
+    }
+    set xMaxYMaxZMax(xMaxYMaxZMax) {
+        this.xMax = xMaxYMaxZMax.x;
+        this.yMax = xMaxYMaxZMax.y;
+        this.zMax = xMaxYMaxZMax.z;
+    }
+    get rightTopFront() {
+        return this.xMinYMinZMin;
+    }
+    set rightTopFront(rightTopFront) {
+        this.xMaxYMaxZMax = rightTopFront;
+    }
+
+
     get xSize() {
         return this.xMax - this.xMin;
     }
@@ -341,65 +553,47 @@ globalThis.Box3 = class Box3 {
         this.zSize = depth;
     }
 
-    get xMinYMinZMin() {
-        return new Vec3(this.xMin, this.yMin, this.zMin);
+    get size() {
+        return new Vec3(this.xSize, this.ySize, this.zSize);
     }
-    get leftBottomBack() {
-        return this.xMinYMinZMin;
-    }
-
-    get xMaxYMinZMin() {
-        return new Vec3(this.xMax, this.yMin, this.zMin);
-    }
-    get rightBottomBack() {
-        return this.xMinYMinZMin;
+    set size(size) {
+        this.xSize = size.x;
+        this.ySize = size.y;
+        this.zSize = size.z;
     }
 
-    get xMinYMaxZMin() {
-        return new Vec3(this.xMin, this.yMax, this.zMin);
+
+    get xCenter() {
+        return (this.xMin + this.xMax) * .5;
     }
-    get leftTopBack() {
-        return this.xMinYMinZMin;
+    set xCenter(xCenter) {
+        let diff = xCenter - this.xCenter;
+        this.xMin += diff;
+        this.xMax += diff;
     }
 
-    get xMaxYMaxZMin() {
-        return new Vec3(this.xMax, this.yMax, this.zMin);
+    get yCenter() {
+        return (this.yMin + this.yMax) * .5;
     }
-    get rightTopBack() {
-        return this.xMinYMinZMin;
-    }
-
-    get xMinYMinZMax() {
-        return new Vec3(this.xMin, this.yMin, this.zMax);
-    }
-    get leftBottomFront() {
-        return this.xMinYMinZMin;
+    set yCenter(yCenter) {
+        let diff = yCenter - this.yCenter;
+        this.yMin += diff;
+        this.yMax += diff;
     }
 
-    get xMaxYMinZMax() {
-        return new Vec3(this.xMax, this.yMin, this.zMax);
+    get zCenter() {
+        return (this.zMin + this.zMax) * .5;
     }
-    get rightBottomFront() {
-        return this.xMinYMinZMin;
-    }
-
-    get xMinYMaxZMax() {
-        return new Vec3(this.xMin, this.yMax, this.zMax);
-    }
-    get leftTopFront() {
-        return this.xMinYMinZMin;
-    }
-
-    get xMaxYMaxZMax() {
-        return new Vec3(this.xMax, this.yMax, this.zMax);
-    }
-    get rightTopFront() {
-        return this.xMinYMinZMin;
+    set zCenter(zCenter) {
+        let diff = zCenter - this.zCenter;
+        this.yMin += diff;
+        this.yMax += diff;
     }
 
     get center() {
-        return new Vec3((this.xMin + this.xMax) * .5, (this.yMin + this.yMax) * .5, (this.zMin + this.zMax) * .5);
+        return new Vec3(this.xCenter, this.yCenter, this.zCenter);
     }
+
 
     move(...v) {
         v = v[0] instanceof Object ? v[0] : new Vec3(...v);
