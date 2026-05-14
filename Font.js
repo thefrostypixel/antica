@@ -90,7 +90,6 @@ globalThis.Font = class Font {
         metrics.descent = measurements.fontBoundingBoxDescent;
         metrics.height = metrics.ascent + metrics.descent;
         metrics.fine = new Box2(measurements.actualBoundingBoxLeft, measurements.actualBoundingBoxRight, -measurements.actualBoundingBoxDescent, measurements.actualBoundingBoxAscent);
-        metrics.coarse = new Box2(Math.floor(metrics.fine.xMin), Math.ceil(metrics.fine.xMax), Math.floor(metrics.fine.yMin), Math.ceil(metrics.fine.yMax));
         return [metrics];
     });
 
@@ -104,22 +103,29 @@ globalThis.Font = class Font {
         return this.#metrics().height;
     }
 
-    fine = text => this.#metrics(text).fine.copy;
-    coarse = text => this.#metrics(text).coarse.copy;
+    fine = (text, pos = new Vec2()) => this.#metrics(text).fine.copy.move(pos);
+    coarse = (text, pos = new Vec2()) => {
+        let fine = this.fine(text, pos);
+        return new Box2(Math.floor(fine.xMin), Math.ceil(fine.xMax), Math.floor(fine.yMin), Math.ceil(fine.yMax));
+    };
 
-    monoTexture = (renderer, text = "") => this.cache.use(`TextMonoTexture\0${renderer.id}\0${text}\0${this.#cacheKey()}`, () => {
-        Font.#context.clearRect(0, 0, Font.#canvas.width = this.coarse(text).width, Font.#canvas.height = this.coarse(text).height);
-        Font.#context.font = `${this.weight ?? 400} ${this.size ?? 16}px ${this.family ?? "Helvetica"}`;
-        Font.#context.fillStyle = "#FFF";
-        Font.#context.fillText(text ?? "", -this.coarse(text).left, this.coarse(text).top);
-        return [renderer.texture(Font.#canvas, Renderer.TextureFormat.R), texture => texture.delete()];
-    });
-    colorTexture = (renderer, text = "") => this.cache.use(`TextColorTexture\0${renderer.id}\0${text}\0${this.#cacheKey()}`, () => {
-        Font.#context.clearRect(0, 0, Font.#canvas.width = this.coarse(text).width, Font.#canvas.height = this.coarse(text).height);
+    colorTexture = (renderer, text = "", pos = new Vec2()) => this.cache.use(`TextColorTexture\0${renderer.id}\0${text}\0${pos.x}\0${pos.y}\0${this.#cacheKey()}`, () => {
+        Font.#context.clearRect(0, 0, Font.#canvas.width = Math.ceil(pos.x + this.fine(text).width), Font.#canvas.height = Math.ceil(pos.y + this.fine(text).height));
         Font.#context.font = `${this.weight ?? 400} ${this.size ?? 16}px ${this.family ?? "Helvetica"}`;
         Font.#context.fillStyle = (this.color ?? Color.okLab(.95)).hex();
-        Font.#context.fillText(text ?? "", -this.coarse(text).left, this.coarse(text).top);
+        Font.#context.fillText(text ?? "", pos.x, pos.y);
         return [renderer.texture(Font.#canvas, Renderer.TextureFormat.sRGBA), texture => texture.delete()];
     });
-    draw = (target, text = "", pos = new Vec2(), blending = Renderer.Blending.overlay) => target.renderer.drawColoredCopy(this.monoTexture(target.renderer, text), target, undefined, this.coarse(text).copy.move(pos), this.color ?? Color.okLab(.95), blending);
+    monoTexture = (renderer, text = "", pos = new Vec2()) => this.cache.use(`TextMonoTexture\0${renderer.id}\0${text}\0${pos.x}\0${pos.y}\0${this.#cacheKey()}`, () => {
+        Font.#context.clearRect(0, 0, Font.#canvas.width = Math.ceil(pos.x + this.fine(text).width), Font.#canvas.height = Math.ceil(pos.y + this.fine(text).height));
+        Font.#context.font = `${this.weight ?? 400} ${this.size ?? 16}px ${this.family ?? "Helvetica"}`;
+        Font.#context.fillStyle = "#FFF";
+        Font.#context.fillText(text ?? "", pos.x, pos.y);
+        return [renderer.texture(Font.#canvas, Renderer.TextureFormat.R), texture => texture.delete()];
+    });
+    draw = (target, text = "", pos = new Vec2(), blending = Renderer.Blending.overlay) => {
+        let offset = new Vec2(Math.floor(pos.x + this.fine(text).xMin), Math.floor(pos.y - this.fine(text).yMax));
+        let texture = this.monoTexture(target.renderer, text, pos.copy.sub(offset));
+        return target.renderer.drawColoredCopy(texture, target, undefined, new Box2(texture).move(offset), this.color ?? Color.okLab(.95), blending);
+    };
 };

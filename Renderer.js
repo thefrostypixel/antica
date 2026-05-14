@@ -627,7 +627,9 @@ Renderer.Texture = class Texture {
         return slot;
     }
     unbind() {
-        this.#internal.freeTextureSlots.add(this.#internal.boundTextures.indexOf(this));
+        if (this.#internal.boundTextures.includes(this)) {
+            this.#internal.freeTextureSlots.add(this.#internal.boundTextures.indexOf(this));
+        }
     }
 
     clear() {
