@@ -386,7 +386,7 @@ globalThis.Renderer = class Renderer extends HTMLCanvasElement {
     }
 
     #copyProgram;
-    drawCopy(src, dst = this, srcCutout = new Box2(src), dstCutout = new Box2(dst), blending = Renderer.Blending.overlay) {
+    drawCopy(src, dst = this, srcCutout = src.box, dstCutout = dst.box, blending = Renderer.Blending.overlay) {
         if (!this.#copyProgram) {
             this.#copyProgram = this.program(`#version 300 es
 
@@ -425,7 +425,7 @@ globalThis.Renderer = class Renderer extends HTMLCanvasElement {
     }
 
     #coloredCopyProgram;
-    drawColoredCopy(src, dst = this, srcCutout = new Box2(src), dstCutout = new Box2(dst), color = Color.okLab(1), blending = Renderer.Blending.overlay) {
+    drawColoredCopy(src, dst = this, srcCutout = src.box, dstCutout = dst.box, color = Color.okLab(1), blending = Renderer.Blending.overlay) {
         if (!this.#coloredCopyProgram) {
             this.#coloredCopyProgram = this.program(`#version 300 es
 
@@ -511,8 +511,11 @@ Renderer.Texture = class Texture {
     constructor(internal, src, format = src?.format || Renderer.TextureFormat.sRGBA, straight = !(src instanceof Renderer.Texture), yDown = !(src instanceof Renderer.Texture)) {
         this.#internal = internal;
         this.#glTexture = this.#internal.gl.createTexture();
-        this.#width = src.naturalWidth ?? src.videoWidth ?? src.codedWidth ?? src.width;
-        this.#height = src.naturalHeight ?? src.videoHeight ?? src.codedHeight ?? src.height;
+        this.upload(src, format, straight, yDown);
+    }
+
+    upload(src, format = src?.format || Renderer.TextureFormat.sRGBA, straight = !(src instanceof Renderer.Texture), yDown = !(src instanceof Renderer.Texture)) {
+        this.#size = new Vec2(src.naturalWidth ?? src.videoWidth ?? src.codedWidth ?? src.width ?? src.x, src.naturalHeight ?? src.videoHeight ?? src.codedHeight ?? src.height ?? src.y);
         this.#format = format;
         this.bind();
         this.unbind();
@@ -527,23 +530,41 @@ Renderer.Texture = class Texture {
         } else if (this.format.isDepth) {
             this.clear();
         }
+        return this;
     }
 
-    // TODO Uploading to textures.
+    resize(size) {
+        if (this.size.x != size.x || this.size.y != size.y) {
+            this.#size = new Vec2(size.width ?? size.x, size.height ?? size.y);
+            this.bind();
+            this.unbind();
+            this.#internal.gl.texImage2D(0x0DE1, 0, this.format.glInternal, this.width, this.height, 0, this.format.glExternal, this.format.glType, null);
+            if (this.format.isDepth) {
+                this.clear();
+            }
+        } else {
+            this.clear();
+        }
+        return this;
+    }
 
     #internal;
     get renderer() {
         return this.#internal.renderer;
     }
 
-    #width;
-    get width() {
-        return this.#width;
+    #size;
+    get size() {
+        return this.#size.copy;
     }
-
-    #height;
+    get box() {
+        return new Box2(0, this.size.x, 0, this.size.y);
+    }
+    get width() {
+        return this.size.x;
+    }
     get height() {
-        return this.#height;
+        return this.size.y;
     }
 
     #format;
