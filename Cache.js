@@ -26,4 +26,11 @@ globalThis.Cache = class Cache {
         }
         this.#used.clear();
     };
+    clean = () => {
+        for (let key in this.#cache) {
+            this.#cache[key][1]?.(this.#cache[key][0]);
+            delete this.#cache[key];
+        }
+        this.#used.clear();
+    };
 };
