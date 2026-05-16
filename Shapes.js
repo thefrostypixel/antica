@@ -276,6 +276,10 @@ globalThis.Box2 = class Box2 {
         v = v[0] instanceof Object ? v[0] : new Vec2(...v);
         return this.xMin <= v.x && v.x <= this.xMax && this.yMin <= v.y && v.y <= this.yMax;
     }
+
+    transformMat3(to = new Box2(0, 1, 0, 1)) {
+        return new Mat3(to.xSize / this.xSize, 0, 0, 0, to.ySize / this.ySize, 0, to.xMin - this.xMin * to.xSize / this.xSize, to.yMin - this.yMin * to.ySize / this.ySize, 1);
+    }
 };
 
 globalThis.Box3 = class Box3 {
@@ -689,5 +693,9 @@ globalThis.Box3 = class Box3 {
     includes(...v) {
         v = v[0] instanceof Object ? v[0] : new Vec3(...v);
         return this.xMin <= v.x && v.x <= this.xMax && this.yMin <= v.y && v.y <= this.yMax && this.zMin <= v.z && v.z <= this.zMax;
+    }
+
+    transformMat4(to = new Box3(0, 1, 0, 1, 0, 1)) {
+        return new Mat3(to.xSize / this.xSize, 0, 0, 0, 0, to.ySize / this.ySize, 0, 0, 0, 0, to.zSize / this.zSize, 0, to.xMin - this.xMin * to.xSize / this.xSize, to.yMin - this.yMin * to.ySize / this.ySize, to.zMin - this.zMin * to.zSize / this.zSize, 1);
     }
 };
