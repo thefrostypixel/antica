@@ -533,17 +533,17 @@ Renderer.Texture = class Texture {
         return this;
     }
 
-    resize(size) {
+    clear(size = this.size) {
         if (this.size.x != size.x || this.size.y != size.y) {
             this.#size = new Vec2(size.width ?? size.x, size.height ?? size.y);
             this.bind();
             this.unbind();
             this.#internal.gl.texImage2D(0x0DE1, 0, this.format.glInternal, this.width, this.height, 0, this.format.glExternal, this.format.glType, null);
             if (this.format.isDepth) {
-                this.clear();
+                this.#internal.clearTexture(this);
             }
         } else {
-            this.clear();
+            this.#internal.clearTexture(this);
         }
         return this;
     }
@@ -651,11 +651,6 @@ Renderer.Texture = class Texture {
         if (this.#internal.boundTextures.includes(this)) {
             this.#internal.freeTextureSlots.add(this.#internal.boundTextures.indexOf(this));
         }
-    }
-
-    clear() {
-        this.#internal.clearTexture(this);
-        return this;
     }
 
     delete() {
