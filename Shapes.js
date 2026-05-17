@@ -285,10 +285,10 @@ globalThis.Box2 = class Box2 {
     }
     include(...v) {
         if (v[0] instanceof Box2 || v[0] instanceof Box3) {
-            this.xMin = Math.min(this.xMin, v.xMin);
-            this.xMax = Math.max(this.xMax, v.xMax);
-            this.yMin = Math.min(this.yMin, v.yMin);
-            this.yMax = Math.max(this.yMax, v.yMax);
+            this.xMin = Math.min(this.xMin, v[0].xMin);
+            this.xMax = Math.max(this.xMax, v[0].xMax);
+            this.yMin = Math.min(this.yMin, v[0].yMin);
+            this.yMax = Math.max(this.yMax, v[0].yMax);
         } else {
             v = v[0] instanceof Object ? v[0] : new Vec2(...v);
             this.xMin = Math.min(this.xMin, v.x);
@@ -736,12 +736,12 @@ globalThis.Box3 = class Box3 {
     }
     include(...v) {
         if (v[0] instanceof Box2 || v[0] instanceof Box3) {
-            this.xMin = Math.min(this.xMin, v.xMin);
-            this.xMax = Math.max(this.xMax, v.xMax);
-            this.yMin = Math.min(this.yMin, v.yMin);
-            this.yMax = Math.max(this.yMax, v.yMax);
-            this.zMin = Math.min(this.zMin, v.zMin);
-            this.zMax = Math.max(this.zMax, v.zMax);
+            this.xMin = Math.min(this.xMin, v[0].xMin);
+            this.xMax = Math.max(this.xMax, v[0].xMax);
+            this.yMin = Math.min(this.yMin, v[0].yMin);
+            this.yMax = Math.max(this.yMax, v[0].yMax);
+            this.zMin = Math.min(this.zMin, v[0].zMin);
+            this.zMax = Math.max(this.zMax, v[0].zMax);
         } else {
             v = v[0] instanceof Object ? v[0] : new Vec3(...v);
             this.xMin = Math.min(this.xMin, v.x);
