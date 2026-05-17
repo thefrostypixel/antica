@@ -286,7 +286,7 @@ globalThis.Renderer = class Renderer extends HTMLCanvasElement {
                         this.#internal.gl.uniform1i(draw.program.uniforms[name].location, draw.program.uniforms[name].value = slot);
                     }
                 } else {
-                    let values = [value].flat(Infinity).map(value => isFinite(value) ? value : value instanceof Color ? value.lRgbList(true) : value.list).flat();
+                    let values = [value].flat(Infinity).map(value => isFinite(value) ? value : value instanceof Color ? value.lRgbList(true, true) : value.list).flat();
                     if (!draw.program.uniforms[name].values || values.length != draw.program.uniforms[name].values.length || values.some((v, i) => v != draw.program.uniforms[name].values[i])) {
                         if (draw.program.uniforms[name].type[0] == "M") {
                             this.#internal.gl[`uniform${draw.program.uniforms[name].type}`](draw.program.uniforms[name].location, false, new Float32Array(draw.program.uniforms[name].values = values));
