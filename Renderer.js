@@ -417,8 +417,8 @@ globalThis.Renderer = class Renderer extends HTMLCanvasElement {
             mesh: this.boxMesh2D,
             uniforms: {
                 textureSampler: src,
-                srcTransform: new Mat3(srcCutout.width / src.width, 0, 0, 0, srcCutout.height / src.height, 0, srcCutout.left / src.width, srcCutout.bottom / src.height, 1),
-                dstTransform: new Mat3(dstCutout.width / dst.width * 2, 0, 0, 0, dstCutout.height / dst.height * 2, 0, dstCutout.left / dst.width * 2 - 1, dstCutout.bottom / dst.height * 2 - 1, 1),
+                srcTransform: srcCutout.copy.divOrigin(src.size).transformFrom(),
+                dstTransform: dstCutout.copy.divOrigin(dst.size).multOrigin(2).move(-1, -1).transformFrom(),
             },
             blending,
         });
@@ -457,8 +457,8 @@ globalThis.Renderer = class Renderer extends HTMLCanvasElement {
             mesh: this.boxMesh2D,
             uniforms: {
                 textureSampler: src,
-                srcTransform: new Mat3(srcCutout.width / src.width, 0, 0, 0, srcCutout.height / src.height, 0, srcCutout.left / src.width, srcCutout.bottom / src.height, 1),
-                dstTransform: new Mat3(dstCutout.width / dst.width * 2, 0, 0, 0, dstCutout.height / dst.height * 2, 0, dstCutout.left / dst.width * 2 - 1, dstCutout.bottom / dst.height * 2 - 1, 1),
+                srcTransform: srcCutout.copy.divOrigin(src.size).transformFrom(),
+                dstTransform: dstCutout.copy.divOrigin(dst.size).multOrigin(2).move(-1, -1).transformFrom(),
                 tint: color,
             },
             blending,
