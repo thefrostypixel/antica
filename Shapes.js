@@ -279,13 +279,21 @@ globalThis.Box2 = class Box2 {
         this.xMax += v.x;
         this.yMin -= v.y;
         this.yMax += v.y;
+        return this;
     }
     include(...v) {
-        v = v[0] instanceof Object ? v[0] : new Vec2(...v);
-        this.xMin = Math.min(this.xMin, v.x);
-        this.xMax = Math.max(this.xMax, v.x);
-        this.yMin = Math.min(this.yMin, v.y);
-        this.yMax = Math.max(this.yMax, v.y);
+        if (v[0] instanceof Box2 || v[0] instanceof Box3) {
+            this.xMin = Math.min(this.xMin, v.xMin);
+            this.xMax = Math.max(this.xMax, v.xMax);
+            this.yMin = Math.min(this.yMin, v.yMin);
+            this.yMax = Math.max(this.yMax, v.yMax);
+        } else {
+            v = v[0] instanceof Object ? v[0] : new Vec2(...v);
+            this.xMin = Math.min(this.xMin, v.x);
+            this.xMax = Math.max(this.xMax, v.x);
+            this.yMin = Math.min(this.yMin, v.y);
+            this.yMax = Math.max(this.yMax, v.y);
+        }
         return this;
     }
     includes(...v) {
@@ -720,15 +728,25 @@ globalThis.Box3 = class Box3 {
         this.yMax += v.y;
         this.zMin -= v.z;
         this.zMax += v.z;
+        return this;
     }
     include(...v) {
-        v = v[0] instanceof Object ? v[0] : new Vec3(...v);
-        this.xMin = Math.min(this.xMin, v.x);
-        this.xMax = Math.max(this.xMax, v.x);
-        this.yMin = Math.min(this.yMin, v.y);
-        this.yMax = Math.max(this.yMax, v.y);
-        this.zMin = Math.min(this.zMin, v.z);
-        this.zMax = Math.max(this.zMax, v.z);
+        if (v[0] instanceof Box2 || v[0] instanceof Box3) {
+            this.xMin = Math.min(this.xMin, v.xMin);
+            this.xMax = Math.max(this.xMax, v.xMax);
+            this.yMin = Math.min(this.yMin, v.yMin);
+            this.yMax = Math.max(this.yMax, v.yMax);
+            this.zMin = Math.min(this.zMin, v.zMin);
+            this.zMax = Math.max(this.zMax, v.zMax);
+        } else {
+            v = v[0] instanceof Object ? v[0] : new Vec3(...v);
+            this.xMin = Math.min(this.xMin, v.x);
+            this.xMax = Math.max(this.xMax, v.x);
+            this.yMin = Math.min(this.yMin, v.y);
+            this.yMax = Math.max(this.yMax, v.y);
+            this.zMin = Math.min(this.zMin, v.z);
+            this.zMax = Math.max(this.zMax, v.z);
+        }
         return this;
     }
     includes(...v) {
