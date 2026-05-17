@@ -259,7 +259,7 @@ globalThis.Box2 = class Box2 {
         return this;
     }
     scaleOrigin(...v) {
-        v = typeof v[0] == "number" ? new Vec2(v[0], v[0]) : v[0] instanceof Object ? v[0] : new Vec2(...v);
+        v = typeof v[0] == "number" ? new Vec2(v[0], v[1] ?? v[0]) : v[0] instanceof Object ? v[0] : new Vec2(...v);
         this.xMin *= v.x;
         this.xMax *= v.x;
         this.yMin *= v.y;
@@ -267,7 +267,7 @@ globalThis.Box2 = class Box2 {
         return this;
     }
     scaleCenter(...v) {
-        v = typeof v[0] == "number" ? new Vec2(v[0], v[0]) : v[0] instanceof Object ? v[0] : new Vec2(...v);
+        v = typeof v[0] == "number" ? new Vec2(v[0], v[1] ?? v[0]) : v[0] instanceof Object ? v[0] : new Vec2(...v);
         let center = this.center;
         this.xMin = this.xMin * v.x + center.x * (1 - v.x);
         this.xMax = this.xMax * v.x + center.x * (1 - v.x);
@@ -276,7 +276,7 @@ globalThis.Box2 = class Box2 {
         return this;
     }
     expand(...v) {
-        v = typeof v[0] == "number" ? new Vec2(v[0], v[0]) : v[0] instanceof Object ? v[0] : new Vec2(...v);
+        v = typeof v[0] == "number" ? new Vec2(v[0], v[1] ?? v[0]) : v[0] instanceof Object ? v[0] : new Vec2(...v);
         this.xMin -= v.x;
         this.xMax += v.x;
         this.yMin -= v.y;
@@ -704,7 +704,7 @@ globalThis.Box3 = class Box3 {
         return this;
     }
     scaleOrigin(...v) {
-        v = typeof v[0] == "number" ? new Vec3(v[0], v[0], v[0]) : v[0] instanceof Object ? v[0] : new Vec3(...v);
+        v = typeof v[0] == "number" ? new Vec3(v[0], v[1] ?? v[0], v[2] ?? v[0]) : v[0] instanceof Object ? v[0] : new Vec3(...v);
         this.xMin *= v.x;
         this.xMax *= v.x;
         this.yMin *= v.y;
@@ -714,7 +714,7 @@ globalThis.Box3 = class Box3 {
         return this;
     }
     scaleCenter(...v) {
-        v = typeof v[0] == "number" ? new Vec3(v[0], v[0], v[0]) : v[0] instanceof Object ? v[0] : new Vec3(...v);
+        v = typeof v[0] == "number" ? new Vec3(v[0], v[1] ?? v[0], v[2] ?? v[0]) : v[0] instanceof Object ? v[0] : new Vec3(...v);
         let center = this.center;
         this.xMin = this.xMin * v.x + center.x * (1 - v.x);
         this.xMax = this.xMax * v.x + center.x * (1 - v.x);
@@ -725,7 +725,7 @@ globalThis.Box3 = class Box3 {
         return this;
     }
     expand(...v) {
-        v = typeof v[0] == "number" ? new Vec3(v[0], v[0], v[0]) : v[0] instanceof Object ? v[0] : new Vec3(...v);
+        v = typeof v[0] == "number" ? new Vec3(v[0], v[1] ?? v[0], v[2] ?? v[0]) : v[0] instanceof Object ? v[0] : new Vec3(...v);
         this.xMin -= v.x;
         this.xMax += v.x;
         this.yMin -= v.y;
