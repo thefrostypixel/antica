@@ -121,6 +121,10 @@ globalThis.Vec2 = class Vec2 {
         v = v[0] instanceof Object ? v[0] : new Vec2(...v);
         return this.x * (v.x ?? 0) + this.y * (v.y ?? 0);
     }
+
+    equals(v, epsilon = 1e-7) {
+        return Math.abs(this.x - v.x) < epsilon && Math.abs(this.y - v.y) < epsilon;
+    }
 };
 
 globalThis.Vec3 = class Vec3 {
@@ -268,6 +272,10 @@ globalThis.Vec3 = class Vec3 {
             this.x * (v.y ?? 0) - this.y * (v.x ?? 0),
         );
     }
+
+    equals(v, epsilon = 1e-7) {
+        return Math.abs(this.x - v.x) < epsilon && Math.abs(this.y - v.y) < epsilon && Math.abs(this.z - v.z) < epsilon;
+    }
 };
 
 globalThis.Vec4 = class Vec4 {
@@ -413,6 +421,10 @@ globalThis.Vec4 = class Vec4 {
     dot(...v) {
         v = v[0] instanceof Object ? v[0] : new Vec4(...v);
         return this.x * (v.x ?? 0) + this.y * (v.y ?? 0) + this.z * (v.z ?? 0) + this.w * (v.w ?? 0);
+    }
+
+    equals(v, epsilon = 1e-7) {
+        return Math.abs(this.x - v.x) < epsilon && Math.abs(this.y - v.y) < epsilon && Math.abs(this.z - v.z) < epsilon && Math.abs(this.w - v.w) < epsilon;
     }
 };
 
