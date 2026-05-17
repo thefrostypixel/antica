@@ -726,3 +726,179 @@ globalThis.Box3 = class Box3 {
         return new Mat3(to.xSize / this.xSize, 0, 0, 0, 0, to.ySize / this.ySize, 0, 0, 0, 0, to.zSize / this.zSize, 0, to.xMin - this.xMin * to.xSize / this.xSize, to.yMin - this.yMin * to.ySize / this.ySize, to.zMin - this.zMin * to.zSize / this.zSize, 1);
     }
 };
+
+globalThis.Padding2 = class Padding2 {
+    constructor(...p) {
+        this.set(...p);
+    }
+
+
+    #xMinus = 0;
+    get xMinus() {
+        return this.#xMinus;
+    }
+    set xMinus(xMinus) {
+        if (isFinite(xMinus)) {
+            this.#xMinus = +xMinus;
+        }
+    }
+    get left() {
+        return this.xMinus;
+    }
+    set left(left) {
+        this.xMinus = left;
+    }
+
+    #xPlus = 0;
+    get xPlus() {
+        return this.#xPlus;
+    }
+    set xPlus(xPlus) {
+        if (isFinite(xPlus)) {
+            this.#xPlus = +xPlus;
+        }
+    }
+    get right() {
+        return this.xPlus;
+    }
+    set right(right) {
+        this.xPlus = right;
+    }
+
+    #yMinus = 0;
+    get yMinus() {
+        return this.#yMinus;
+    }
+    set yMinus(yMinus) {
+        if (isFinite(yMinus)) {
+            this.#yMinus = +yMinus;
+        }
+    }
+    get bottom() {
+        return this.yMinus;
+    }
+    set bottom(bottom) {
+        this.yMinus = bottom;
+    }
+
+    #yPlus = 0;
+    get yPlus() {
+        return this.#yPlus;
+    }
+    set yPlus(yPlus) {
+        if (isFinite(yPlus)) {
+            this.#yPlus = +yPlus;
+        }
+    }
+    get top() {
+        return this.yPlus;
+    }
+    set top(top) {
+        this.yPlus = top;
+    }
+
+
+    get xTotal() {
+        return this.xMinus + this.xPlus;
+    }
+    set xTotal(xTotal) {
+        this.xPlus = xTotal - this.xMinus;
+    }
+    get horizontalTotal() {
+        return this.xTotal;
+    }
+    set horizontalTotal(horizontalTotal) {
+        return this.xTotal = horizontalTotal;
+    }
+
+    get yTotal() {
+        return this.yMinus + this.yPlus;
+    }
+    set yTotal(yTotal) {
+        this.yPlus = yTotal - this.yMinus;
+    }
+    get verticalTotal() {
+        return this.yTotal;
+    }
+    set verticalTotal(verticalTotal) {
+        this.yTotal = verticalTotal;
+    }
+
+    get total() {
+        return new Vec2(this.xTotal, this.yTotal);
+    }
+    set total(total) {
+        this.xTotal = total?.x;
+        this.yTotal = total?.y;
+    }
+
+
+    get xAvg() {
+        return (this.xMinus + this.xPlus) * .5;
+    }
+    set xAvg(xAvg) {
+        this.xMinus = xAvg;
+        this.xPlus = xAvg;
+    }
+
+    get yAvg() {
+        return (this.yMinus + this.yPlus) * .5;
+    }
+    set yAvg(yAvg) {
+        this.yMinus = yAvg;
+        this.yPlus = yAvg;
+    }
+
+    get avg() {
+        return new Vec2(this.xAvg, this.yAvg);
+    }
+    set avg(avg) {
+        this.xAvg = avg?.x;
+        this.yAvg = avg?.y;
+    }
+
+
+    scale(s) {
+        this.xMinus *= s;
+        this.xPlus *= s;
+        this.yMinus *= s;
+        this.yPlus *= s;
+        return this;
+    }
+
+    get copy() {
+        return new Padding2(this);
+    }
+    get obj() {
+        return {xMinus: this.xMinus, xPlus: this.xPlus, yMinus: this.yMinus, yPlus: this.yPlus};
+    }
+    get list() {
+        return [this.xMinus, this.xPlus, this.yMinus, this.yPlus];
+    }
+    get padding2() {
+        return new Padding2(this);
+    }
+
+    set(...p) {
+        p = p.flat(Infinity);
+        let box = [
+            p[0]?.xMinus ?? p[0]?.left ?? p[0],
+            p[0]?.xPlus ?? p[0]?.right ?? p[1],
+            p[0]?.xTotal ?? p[0]?.horizontalTotal,
+            p[0]?.yMinus ?? p[0]?.bottom ?? p[2],
+            p[0]?.yPlus ?? p[0]?.top ?? p[3],
+            p[0]?.yTotal ?? p[0]?.verticalTotal,
+        ];
+        this.xMinus = isFinite(box[0]) ? box[0] : 0;
+        this.xPlus = isFinite(box[1]) ? box[1] : this.xMinus + box[2];
+        if (!isFinite(box[0]) && isFinite(box[1])) {
+            this.xMinus = this.xPlus - box[2];
+        }
+        this.yMinus = isFinite(box[3]) ? box[3] : 0;
+        this.yPlus = isFinite(box[4]) ? box[4] : this.yMinus + box[5];
+        if (!isFinite(box[3]) && isFinite(box[4])) {
+            this.yMinus = this.yPlus - box[5];
+        }
+        return this;
+    }
+};
