@@ -258,19 +258,21 @@ globalThis.Box2 = class Box2 {
         this.yMax += v.y;
         return this;
     }
-    scaleOrigin(s) {
-        this.xMin *= s;
-        this.xMax *= s;
-        this.yMin *= s;
-        this.yMax *= s;
+    scaleOrigin(...v) {
+        v = typeof v[0] == "number" ? new Vec2(v[0], v[0]) : v[0] instanceof Object ? v[0] : new Vec2(...v);
+        this.xMin *= v.x;
+        this.xMax *= v.x;
+        this.yMin *= v.y;
+        this.yMax *= v.y;
         return this;
     }
-    scaleCenter(s) {
+    scaleCenter(...v) {
+        v = typeof v[0] == "number" ? new Vec2(v[0], v[0]) : v[0] instanceof Object ? v[0] : new Vec2(...v);
         let center = this.center;
-        this.xMin = this.xMin * s + center.x * (1 - s);
-        this.xMax = this.xMax * s + center.x * (1 - s);
-        this.yMin = this.yMin * s + center.y * (1 - s);
-        this.yMax = this.yMax * s + center.y * (1 - s);
+        this.xMin = this.xMin * v.x + center.x * (1 - v.x);
+        this.xMax = this.xMax * v.x + center.x * (1 - v.x);
+        this.yMin = this.yMin * v.y + center.y * (1 - v.y);
+        this.yMax = this.yMax * v.y + center.y * (1 - v.y);
         return this;
     }
     expand(...v) {
@@ -701,23 +703,25 @@ globalThis.Box3 = class Box3 {
         this.zMax += v.z;
         return this;
     }
-    scaleOrigin(s) {
-        this.xMin *= s;
-        this.xMax *= s;
-        this.yMin *= s;
-        this.yMax *= s;
-        this.zMin *= s;
-        this.zMax *= s;
+    scaleOrigin(...v) {
+        v = typeof v[0] == "number" ? new Vec3(v[0], v[0], v[0]) : v[0] instanceof Object ? v[0] : new Vec3(...v);
+        this.xMin *= v.x;
+        this.xMax *= v.x;
+        this.yMin *= v.y;
+        this.yMax *= v.y;
+        this.zMin *= v.z;
+        this.zMax *= v.z;
         return this;
     }
-    scaleCenter(s) {
+    scaleCenter(...v) {
+        v = typeof v[0] == "number" ? new Vec3(v[0], v[0], v[0]) : v[0] instanceof Object ? v[0] : new Vec3(...v);
         let center = this.center;
-        this.xMin = this.xMin * s + center.x * (1 - s);
-        this.xMax = this.xMax * s + center.x * (1 - s);
-        this.yMin = this.yMin * s + center.y * (1 - s);
-        this.yMax = this.yMax * s + center.y * (1 - s);
-        this.zMin = this.zMin * s + center.z * (1 - s);
-        this.zMax = this.zMax * s + center.z * (1 - s);
+        this.xMin = this.xMin * v.x + center.x * (1 - v.x);
+        this.xMax = this.xMax * v.x + center.x * (1 - v.x);
+        this.yMin = this.yMin * v.y + center.y * (1 - v.y);
+        this.yMax = this.yMax * v.y + center.y * (1 - v.y);
+        this.zMin = this.zMin * v.z + center.z * (1 - v.z);
+        this.zMax = this.zMax * v.z + center.z * (1 - v.z);
         return this;
     }
     expand(...v) {
