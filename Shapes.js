@@ -893,6 +893,21 @@ globalThis.Padding2 = class Padding2 {
         this.yPlus = top;
     }
 
+    get minus() {
+        return new Vec2(this.xMinus, this.yMinus);
+    }
+    set minus(minus) {
+        this.xMinus = minus?.x;
+        this.yMinus = minus?.y;
+    }
+    get plus() {
+        return new Vec2(this.xPlus, this.yPlus);
+    }
+    set plus(plus) {
+        this.xPlus = plus?.x;
+        this.yPlus = plus?.y;
+    }
+
 
     get xTotal() {
         return this.xMinus + this.xPlus;
