@@ -209,7 +209,7 @@ globalThis.Color = class Color {
     okLab() {
         return {L: this.L, a: this.a, b: this.b, alpha: this.alpha};
     }
-    lRgbObj(clip = false) {
+    lRgbObj(clip = false, preMult = false) {
         let okLabToLRgb = (L, a, b) => {
             let l = (L + .3963377774 * a + .2158037573 * b) ** 3;
             let m = (L - .1055613458 * a - .0638541728 * b) ** 3;
@@ -224,10 +224,12 @@ globalThis.Color = class Color {
             let t = Math.max(r < 0 ? -r / (gray.r - r) : 0, r > 1 ? (1 - r) / (gray.r - r) : 0, g < 0 ? -g / (gray.g - g) : 0, g > 1 ? (1 - g) / (gray.g - g) : 0, b < 0 ? b / (gray.b - b) : 0, b > 1 ? (1 - b) / (gray.b - b) : 0);
             return {r: clamp(r + (gray.r - r) * t), g: clamp(g + (gray.g - g) * t), b: clamp(b + (gray.b - b) * t), a: clamp(this.alpha)};
         }
-        return {...lRgb, a: clip ? clamp(this.alpha) : this.alpha};
+        let a = clip ? clamp(this.alpha) : this.alpha;
+        let mult = preMult ? a : 1;
+        return {r: lRgb.r * mult, g: lRgb.g * mult, b: lRgb.b * mult, a};
     }
-    lRgbList(clip = false) {
-        let lRgb = this.lRgbObj(clip);
+    lRgbList(clip = false, preMult = false) {
+        let lRgb = this.lRgbObj(clip, preMult);
         return [lRgb.r, lRgb.g, lRgb.b, lRgb.a];
     }
     sRgbObj(clip = false) {
