@@ -215,8 +215,12 @@ globalThis.Renderer = class Renderer extends HTMLCanvasElement {
         return new Renderer.Mesh(this.#internal, Renderer.prepareInterleavedData(types, vertices, indices), type);
     }
 
-    draw(...settings) {
-        return new Renderer.Draw(this.#internal, ...settings);
+    draw(...draw) {
+        return new Renderer.Draw(this.#internal, ...draw);
+    }
+
+    drawQueue(draw, callback) {
+        return new Renderer.DrawQueue(this.#internal, draw, callback);
     }
 
 
@@ -1025,9 +1029,9 @@ Renderer.Mesh = class Mesh {
 };
 
 Renderer.Draw = class Draw {
-    constructor(internal, ...draws) {
+    constructor(internal, ...draw) {
         this.#internal = internal;
-        this.set(...draws);
+        this.set(...draw);
     }
 
     #internal;
@@ -1163,8 +1167,8 @@ Renderer.Draw = class Draw {
         return new Draw(this.#internal, this);
     }
 
-    set(...draws) {
-        draws.forEach(draw => {
+    set(...draw) {
+        draw.forEach(draw => {
             if (draw instanceof Object) {
                 Object.assign(this.targets, draw.targets);
                 Object.assign(this.uniforms, draw.uniforms);
@@ -1209,32 +1213,55 @@ Renderer.Draw = class Draw {
         }
         boundTextures.forEach(texture => texture.unbind());
     }
+};
 
-    queue() {
-        let resolve;
-        let promise = new Promise(r => resolve = r);
-        this.#internal.drawQueue.push({settings: this.copy, resolve});
-        if (!this.#internal.microtaskActive) {
-            this.#internal.microtaskActive = true;
-            queueMicrotask(() => {
-                while (this.#internal.drawQueue.length) {
-                    let best = 0;
-                    let bestCost = Infinity;
-                    this.#internal.drawQueue.forEach((draw, i) => {
-                        let cost = 4 * (draw.settings.target != this.#internal.drawTarget) + 2 * (draw.settings.program != this.#internal.activeProgram) + (draw.settings.program != this.#internal.activeVertexArray?.program || draw.settings.mesh != this.#internal.activeVertexArray?.mesh || draw.settings.instances != this.#internal.activeVertexArray?.instances);
-                        if (cost < bestCost) {
-                            best = i;
-                            bestCost = cost;
-                        }
-                    });
-                    let draw = this.#internal.drawQueue.splice(best, 1)[0];
-                    draw.settings.exec();
-                    draw.resolve();
+Renderer.DrawQueue = class DrawQueue {
+    constructor(internal, draw, callback) {
+        this.#internal = internal;
+        this.add(draw, callback);
+    }
+
+    #internal;
+    get renderer() {
+        return this.#internal.renderer;
+    }
+
+    #draws = [];
+    get draws() {
+        return this.#draws.map(draw => draw.draw);
+    }
+
+    add(draw, callback) {
+        let count = 0;
+        [draw].flat(Infinity).forEach(draw => {
+            if (draw instanceof DrawQueue) {
+                draw.draws.forEach(each => {
+                    count++;
+                    this.#draws.push({draw: each, callback: () => --count || callback(draw, this)});
+                });
+            } else {
+                count++;
+                this.#draws.push({draw, callback: () => --count || callback(draw, this)});
+            }
+        });
+        return this;
+    }
+
+    exec() {
+        while (this.#draws.length) {
+            let best = 0;
+            let bestCost = Infinity;
+            this.#draws.forEach((draw, i) => {
+                let cost = 2 * (draw.draw.program != this.#internal.activeProgram) + (draw.draw.program != this.#internal.activeVertexArray?.program || draw.draw.mesh != this.#internal.activeVertexArray?.mesh || draw.draw.instances != this.#internal.activeVertexArray?.instances);
+                if (cost < bestCost) {
+                    best = i;
+                    bestCost = cost;
                 }
-                this.#internal.microtaskActive = false;
             });
+            let draw = this.#draws.splice(best, 1)[0];
+            draw.draw.exec();
+            draw.callback();
         }
-        return promise;
     }
 };
 
