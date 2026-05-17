@@ -954,6 +954,28 @@ globalThis.Padding2 = class Padding2 {
     }
 
 
+    get xMin() {
+        return Math.min(this.xMinus, this.xPlus);
+    }
+    get xMax() {
+        return Math.max(this.xMinus, this.xPlus);
+    }
+
+    get yMin() {
+        return Math.min(this.yMinus, this.yPlus);
+    }
+    get yMax() {
+        return Math.max(this.yMinus, this.yPlus);
+    }
+
+    get min() {
+        return Math.min(this.xMinus, this.xPlus, this.yMinus, this.yPlus);
+    }
+    get max() {
+        return Math.max(this.xMinus, this.xPlus, this.yMinus, this.yPlus);
+    }
+
+
     scale(s) {
         this.xMinus *= s;
         this.xPlus *= s;
