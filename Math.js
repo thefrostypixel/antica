@@ -107,6 +107,11 @@ globalThis.Vec2 = class Vec2 {
         this.y *= -1;
         return this;
     }
+    invert() {
+        this.x /= this.x ** 2 + this.y ** 2 ?? Infinity;
+        this.y /= this.x ** 2 + this.y ** 2 ?? Infinity;
+        return this;
+    }
 
     dist(...v) {
         v = v[0] instanceof Object ? v[0] : new Vec2(...v);
@@ -238,6 +243,12 @@ globalThis.Vec3 = class Vec3 {
         this.x *= -1;
         this.y *= -1;
         this.z *= -1;
+        return this;
+    }
+    invert() {
+        this.x /= this.x ** 2 + this.y ** 2 + this.z ** 2 ?? Infinity;
+        this.y /= this.x ** 2 + this.y ** 2 + this.z ** 2 ?? Infinity;
+        this.z /= this.x ** 2 + this.y ** 2 + this.z ** 2 ?? Infinity;
         return this;
     }
 
