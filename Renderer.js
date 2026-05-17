@@ -159,20 +159,25 @@ globalThis.Renderer = class Renderer extends HTMLCanvasElement {
         return this.#internal;
     }
 
+    get size() {
+        return new Vec2(super.width, super.height);
+    }
+    get box() {
+        return new Box2(0, this.size.x, 0, this.size.y);
+    }
     get width() {
         return super.width;
     }
     set width(width) {
-        if (!isNaN(width) && +width > 0) {
+        if (isFinite(width) && +width > 0) {
             super.width = +width;
         }
     }
-
     get height() {
         return super.height;
     }
     set height(height) {
-        if (!isNaN(height) && +height > 0) {
+        if (isFinite(height) && +height > 0) {
             super.height = +height;
         }
     }
@@ -230,6 +235,7 @@ globalThis.Renderer = class Renderer extends HTMLCanvasElement {
         }
     }
 
+    #viewportSize = new Vec2();
     #setDrawTargets(colorTargets, depthTarget) {
         if (colorTargets?.length || depthTarget) {
             if (!this.#internal.drawBufferActive) {
@@ -255,7 +261,10 @@ globalThis.Renderer = class Renderer extends HTMLCanvasElement {
                 this.#internal.drawBufferActive = false;
             }
         }
-        this.#internal.gl.viewport(0, 0, (colorTargets?.[0] || depthTarget || this).width, (colorTargets?.[0] || depthTarget || this).height); // TODO Cache the viewport size.
+        if (!this.#viewportSize.equals((colorTargets?.[0] || depthTarget || this).size)) {
+            this.#viewportSize = (colorTargets?.[0] || depthTarget || this).size;
+            this.#internal.gl.viewport(0, 0, this.#viewportSize.x, this.#viewportSize.y);
+        }
     }
 
     #setProgram(draw) {
