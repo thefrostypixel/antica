@@ -293,11 +293,19 @@ globalThis.Box2 = class Box2 {
         return this;
     }
     expand(...v) {
-        v = typeof v[0] == "number" ? new Vec2(v[0], v[1] ?? v[0]) : v[0] instanceof Object ? v[0] : new Vec2(...v);
-        this.xMin -= v.x;
-        this.xMax += v.x;
-        this.yMin -= v.y;
-        this.yMax += v.y;
+        if (v.length == 4 || v[0] instanceof Padding2) {
+            v[0] = v[0] instanceof Padding2 ? v[0] : new Padding2(...v);
+            this.xMin -= v.xMinus;
+            this.xMax += v.xPlus;
+            this.yMin -= v.yMinus;
+            this.yMax += v.yPlus;
+        } else {
+            v = typeof v[0] == "number" ? new Vec2(v[0], v[1] ?? v[0]) : v[0] instanceof Object ? v[0] : new Vec2(...v);
+            this.xMin -= v.x;
+            this.xMax += v.x;
+            this.yMin -= v.y;
+            this.yMax += v.y;
+        }
         return this;
     }
     include(...v) {
@@ -766,13 +774,21 @@ globalThis.Box3 = class Box3 {
         return this;
     }
     expand(...v) {
-        v = typeof v[0] == "number" ? new Vec3(v[0], v[1] ?? v[0], v[2] ?? v[0]) : v[0] instanceof Object ? v[0] : new Vec3(...v);
-        this.xMin -= v.x;
-        this.xMax += v.x;
-        this.yMin -= v.y;
-        this.yMax += v.y;
-        this.zMin -= v.z;
-        this.zMax += v.z;
+        if (v.length == 4 || v[0] instanceof Padding2) {
+            v[0] = v[0] instanceof Padding2 ? v[0] : new Padding2(...v);
+            this.xMin -= v.xMinus;
+            this.xMax += v.xPlus;
+            this.yMin -= v.yMinus;
+            this.yMax += v.yPlus;
+        } else {
+            v = typeof v[0] == "number" ? new Vec3(v[0], v[1] ?? v[0], v[2] ?? v[0]) : v[0] instanceof Object ? v[0] : new Vec3(...v);
+            this.xMin -= v.x;
+            this.xMax += v.x;
+            this.yMin -= v.y;
+            this.yMax += v.y;
+            this.zMin -= v.z;
+            this.zMax += v.z;
+        }
         return this;
     }
     include(...v) {
