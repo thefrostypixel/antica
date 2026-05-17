@@ -963,10 +963,10 @@ globalThis.Padding2 = class Padding2 {
         p = p.flat(Infinity);
         let box = [
             p[0]?.xMinus ?? p[0]?.left ?? p[0],
-            p[0]?.xPlus ?? p[0]?.right ?? p[1],
+            p[0]?.xPlus ?? p[0]?.right ?? (p.length == 2 ? p[0] : p[1] ?? p[0]),
             p[0]?.xTotal ?? p[0]?.horizontalTotal,
-            p[0]?.yMinus ?? p[0]?.bottom ?? p[2],
-            p[0]?.yPlus ?? p[0]?.top ?? p[3],
+            p[0]?.yMinus ?? p[0]?.bottom ?? p[2] ?? p[1] ?? p[0],
+            p[0]?.yPlus ?? p[0]?.top ?? p[3] ?? p[2] ?? p[1] ?? p[0],
             p[0]?.yTotal ?? p[0]?.verticalTotal,
         ];
         this.xMinus = isFinite(box[0]) ? box[0] : 0;
