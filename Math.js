@@ -1,3 +1,10 @@
+/*
+This file is licensed under CC0 1.0
+(https://creativecommons.org/publicdomain/zero/1.0),
+meaning you can use, modify, and distribute it however you want,
+including commercially, and without including this license.
+*/
+
 globalThis.Vec2 = class Vec2 {
     constructor(...v) {
         this.set(...v);
