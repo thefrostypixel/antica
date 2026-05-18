@@ -430,8 +430,8 @@ globalThis.Renderer = class Renderer extends HTMLCanvasElement {
             mesh: this.boxMesh2D,
             uniforms: {
                 textureSampler: src,
-                srcTransform: srcCutout.copy.divOrigin(src.size).transformFrom(),
-                dstTransform: dstCutout.copy.divOrigin(dst.size).multOrigin(2).move(-1, -1).transformFrom(),
+                srcTransform: srcCutout.copy.divOrigin(src.size).transformMat3(),
+                dstTransform: dstCutout.vertexMat3(dst),
             },
             blending,
         });
@@ -470,8 +470,8 @@ globalThis.Renderer = class Renderer extends HTMLCanvasElement {
             mesh: this.boxMesh2D,
             uniforms: {
                 textureSampler: src,
-                srcTransform: srcCutout.copy.divOrigin(src.size).transformFrom(),
-                dstTransform: dstCutout.copy.divOrigin(dst.size).multOrigin(2).move(-1, -1).transformFrom(),
+                srcTransform: srcCutout.copy.divOrigin(src.size).transformMat3(),
+                dstTransform: dstCutout.vertexMat3(dst),
                 tint: color,
             },
             blending,
