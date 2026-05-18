@@ -328,11 +328,11 @@ globalThis.Box2 = class Box2 {
         return this.xMin <= v.x && v.x <= this.xMax && this.yMin <= v.y && v.y <= this.yMax;
     }
 
-    transformTo(to = new Box2(0, 1, 0, 1)) {
-        return new Mat3(to.xSize / this.xSize, 0, 0, 0, to.ySize / this.ySize, 0, to.xMin - this.xMin * to.xSize / this.xSize, to.yMin - this.yMin * to.ySize / this.ySize, 1);
-    }
-    transformFrom(from = new Box2(0, 1, 0, 1)) {
+    transformMat3(from = new Box2(0, 1, 0, 1)) {
         return new Mat3(this.xSize / from.xSize, 0, 0, 0, this.ySize / from.ySize, 0, this.xMin - from.xMin * this.xSize / from.xSize, this.yMin - from.yMin * this.ySize / from.ySize, 1);
+    }
+    vertexMat3(target, mesh = new Box2(0, 1, 0, 1)) {
+        return new Mat3(this.xSize * 2 / target.width / mesh.xSize, 0, 0, 0, this.ySize * 2 / target.height / mesh.ySize, 0, this.xMin * 2 / target.width - 1 - mesh.xMin * this.xSize * 2 / target.width / mesh.xSize, this.yMin * 2 / target.height - 1 - mesh.yMin * this.ySize * 2 / target.height / mesh.ySize, 1);
     }
 };
 
