@@ -222,7 +222,7 @@ globalThis.Color = class Color {
             let {r, g, b} = okLabToLRgb(clamp(this.L), this.a, this.b);
             let gray = okLabToLRgb(clamp(this.L), 0, 0);
             let t = Math.max(r < 0 ? -r / (gray.r - r) : 0, r > 1 ? (1 - r) / (gray.r - r) : 0, g < 0 ? -g / (gray.g - g) : 0, g > 1 ? (1 - g) / (gray.g - g) : 0, b < 0 ? b / (gray.b - b) : 0, b > 1 ? (1 - b) / (gray.b - b) : 0);
-            return {r: clamp(r + (gray.r - r) * t), g: clamp(g + (gray.g - g) * t), b: clamp(b + (gray.b - b) * t), a: clamp(this.alpha)};
+            lRgb = {r: clamp(r + (gray.r - r) * t), g: clamp(g + (gray.g - g) * t), b: clamp(b + (gray.b - b) * t)};
         }
         let a = clip ? clamp(this.alpha) : this.alpha;
         let mult = preMult ? a : 1;
