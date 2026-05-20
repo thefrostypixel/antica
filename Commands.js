@@ -783,11 +783,13 @@ Commands.Group = class Group {
     add = (ordered = [], named = {}) => {
         if (ordered.length || Object.keys(named).length) {
             this.#ordered.writeChunk(ordered);
-            Object.entries(named).forEach(([name, value]) => {
+            ordered.forEach(stream => stream.copy.catch(this.cancel));
+            Object.entries(named).forEach(([name, stream]) => {
                 if (this.#named[name]) {
                     throw new Commands.Group.NameTakenError(name);
                 }
-                this.#named[name] = value;
+                this.#named[name] = stream;
+                stream.copy.catch(this.cancel);
             });
             this.#changePromise.resolve();
             this.#changePromise = Promise.withResolvers();
