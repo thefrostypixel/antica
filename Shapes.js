@@ -912,6 +912,62 @@ globalThis.Padding2 = class Padding2 {
         this.yPlus = plus?.y;
     }
 
+    get xMinusYMinus() {
+        return new Vec2(this.xMinus, this.yMinus);
+    }
+    set xMinusYMinus(xMinusYMinus) {
+        this.xMinus = xMinusYMinus?.x;
+        this.yMinus = xMinusYMinus?.y;
+    }
+    get leftBottom() {
+        return this.xMinusYMinus;
+    }
+    set leftBottom(leftBottom) {
+        this.xMinusYMinus = leftBottom;
+    }
+
+    get xMinusYPlus() {
+        return new Vec2(this.xMinus, this.yPlus);
+    }
+    set xMinusYPlus(xMinusYPlus) {
+        this.xMinus = xMinusYPlus?.x;
+        this.yPlus = xMinusYPlus?.y;
+    }
+    get leftTop() {
+        return this.xMinusYPlus;
+    }
+    set leftTop(leftTop) {
+        this.xMinusYPlus = leftTop;
+    }
+
+    get xPlusYMinus() {
+        return new Vec2(this.xPlus, this.yMinus);
+    }
+    set xPlusYMinus(xPlusYMinus) {
+        this.xPlus = xPlusYMinus?.x;
+        this.yMinus = xPlusYMinus?.y;
+    }
+    get rightBottom() {
+        return this.xPlusYMinus;
+    }
+    set rightBottom(rightBottom) {
+        this.xPlusYMinus = rightBottom;
+    }
+
+    get xPlusYPlus() {
+        return new Vec2(this.xPlus, this.yPlus);
+    }
+    set xPlusYPlus(xPlusYPlus) {
+        this.xPlus = xPlusYPlus?.x;
+        this.yPlus = xPlusYPlus?.y;
+    }
+    get rightTop() {
+        return this.xPlusYPlus;
+    }
+    set rightTop(rightTop) {
+        this.xPlusYPlus = rightTop;
+    }
+
 
     get xTotal() {
         return this.xMinus + this.xPlus;
