@@ -151,6 +151,21 @@ globalThis.Anim = class Anim {
         return Math.max(0, Object.values(this.#axes).reduce((end, axis) => Math.max(end, axis.functions?.at(-1)?.end ?? 0), 0) - (typeof this.#time == "number" ? this.#time : this.#time?.sec ?? performance.now() / 1e3));
     }
 
+    skip(ratio = 1) {
+        if (0 < ratio) {
+            if (ratio < 1) {
+                let t = +ratio * this.timeLeft;
+                Object.keys(this.#axes).forEach(axis => this.#axes[axis].functions.forEach(f => {
+                    f.n0 += f.n1 * t + f.n2 * t ** 2;
+                    f.n1 += 2 * f.n2 * t;
+                    f.end -= t;
+                }));
+            } else {
+                Object.keys(this.#axes).forEach(axis => this.#axes[axis].functions = []);
+            }
+        }
+    }
+
     #callback = undefined;
     get callback() {
         return this.#callback;

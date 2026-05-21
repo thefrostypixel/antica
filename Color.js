@@ -293,6 +293,10 @@ globalThis.ColorAnim = class ColorAnim {
         return this.#anim.timeLeft;
     }
 
+    skip(ratio = 1) {
+        this.#anim.skip(ratio);
+    }
+
     get callback() {
         return this.#anim.callback;
     }
