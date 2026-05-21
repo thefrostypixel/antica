@@ -94,7 +94,7 @@ globalThis.Anim = class Anim {
         }
     }
     get axis() {
-        return this.#axesProxy[""];
+        return this.axes[""];
     }
     set axis(axis) {
         this.#axesProxy[""] = axis;
@@ -189,7 +189,7 @@ globalThis.Anim = class Anim {
         let time = typeof this.#time == "number" ? this.#time : this.#time?.sec ?? performance.now() / 1e3;
         return Object.fromEntries(Object.keys(this.#axes).map(axis => {
             let f = this.#axes[axis].functions.find(f => time <= f.end);
-            return [axis, {min: this.#axes[axis].min, max: this.#axes[axis].max, target: this.#axes[axis].target, values: f ? f.n0 + f.n1 * time + f.n2 * time ** 2 : this.#axes[axis].target, vel: f ? f.n1 + f.n2 * time * 2 : 0}];
+            return [axis, {min: this.#axes[axis].min, max: this.#axes[axis].max, target: this.#axes[axis].target, value: f ? f.n0 + f.n1 * time + f.n2 * time ** 2 : this.#axes[axis].target, vel: f ? f.n1 + f.n2 * time * 2 : 0}];
         }));
     }
 
@@ -203,7 +203,7 @@ globalThis.Anim = class Anim {
                 let min = Math.min(axes[axis].min, axes[axis].max);
                 let diff = Math.max(axes[axis].min, axes[axis].max) - min;
                 let mod = n => (n % diff + diff) % diff;
-                let end = axes[axis].values + axes[axis].vel * Math.abs(axes[axis].vel) / this.#accel / 2;
+                let end = axes[axis].value + axes[axis].vel * Math.abs(axes[axis].vel) / this.#accel / 2;
                 let end2 = end - min;
                 targets = (Math.abs(mod(axes[axis].target - min) - mod(end - min)) < 1e-9 ? [Math.floor(end2 / diff) * diff + mod(axes[axis].target - min) + min] : [
                     Math.floor(end2 / diff) * diff + mod(axes[axis].target - min) + min,
@@ -215,18 +215,18 @@ globalThis.Anim = class Anim {
         });
         let best = {duration: Infinity};
         targets.forEach(target => {
-            let totalDist = Object.keys(axes).reduce((totalDist, axis) => totalDist + (target[axis] - axes[axis].values) ** 2, 0) ** .5;
+            let totalDist = Object.keys(axes).reduce((totalDist, axis) => totalDist + (target[axis] - axes[axis].value) ** 2, 0) ** .5;
             let totalVel = Object.values(axes).reduce((totalVel, axis) => totalVel + axis.vel ** 2, 0) ** .5;
             let normalApproach;
             let approachVel;
             let driftVel = 0;
             let normalDrift;
             if (totalDist > 1e-9) {
-                normalApproach = Object.fromEntries(Object.keys(axes).map(axis => [axis, (target[axis] - axes[axis].values) / totalDist]));
+                normalApproach = Object.fromEntries(Object.keys(axes).map(axis => [axis, (target[axis] - axes[axis].value) / totalDist]));
                 approachVel = Object.keys(axes).reduce((dot, axis) => dot + normalApproach[axis] * axes[axis].vel, 0);
                 if (totalVel > 1e-9) {
                     let normalVel = Object.fromEntries(Object.keys(axes).map(axis => [axis, axes[axis].vel / totalVel]));
-                    let dot = Object.keys(axes).reduce((dot, axis) => dot + normalApproach[axis] * normalVel[axis]);
+                    let dot = Object.keys(axes).reduce((dot, axis) => dot + normalApproach[axis] * normalVel[axis], 0);
                     if (Math.abs(dot) < 1 - 1e-9) {
                         let drift = Object.fromEntries(Object.keys(axes).map(axis => [axis, normalVel[axis] - dot * normalApproach[axis]]));
                         driftVel = Object.values(axes).reduce((driftMag, axis) => driftMag + drift[axis] ** 2, 0) ** .5;
@@ -282,7 +282,7 @@ globalThis.Anim = class Anim {
             let approachFunction = approachFunctions.find(f => end <= f.end);
             let driftFunction = driftFunctions.find(f => end <= f.end);
             Object.keys(axes).forEach(axis => {
-                let n0 = normalApproach[axis] * (approachFunction?.n0 ?? 0) + (driftFunction ? normalDrift[axis] * driftFunction.n0 : 0) + axes[axis].values;
+                let n0 = normalApproach[axis] * (approachFunction?.n0 ?? 0) + (driftFunction ? normalDrift[axis] * driftFunction.n0 : 0) + axes[axis].value;
                 let n1 = normalApproach[axis] * (approachFunction?.n1 ?? 0) + (driftFunction ? normalDrift[axis] * driftFunction.n1 : 0);
                 let n2 = normalApproach[axis] * (approachFunction?.n2 ?? 0) + (driftFunction ? normalDrift[axis] * driftFunction.n2 : 0);
                 if (Math.abs(n1) + Math.abs(n2) > 1e-9) {
