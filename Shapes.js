@@ -228,12 +228,12 @@ globalThis.Box2 = class Box2 {
     set(...b) {
         b = b.flat(Infinity);
         let box = [
-            b[0]?.xMin ?? b[0]?.left ?? b[0],
-            b[0]?.xMax ?? b[0]?.right ?? b[1],
-            b[0]?.xSize ?? b[0]?.width,
-            b[0]?.yMin ?? b[0]?.bottom ?? b[2],
-            b[0]?.yMax ?? b[0]?.top ?? b[3],
-            b[0]?.ySize ?? b[0]?.height,
+            b[0]?.xMin ?? b[0]?.left ?? b[0]?.min?.x ?? (b[0]?.x == undefined ? b[0] : b[1]?.x == undefined ? 0 : Math.min(b[0]?.x, b[1]?.x)),
+            b[0]?.xMax ?? b[0]?.right ?? b[0]?.max?.x ?? (b[0]?.x == undefined ? b[1] : b[1]?.x == undefined ? b[0]?.x : Math.max(b[0]?.x, b[1]?.x)),
+            b[0]?.xSize ?? b[0]?.width ?? b[0]?.size?.x,
+            b[0]?.yMin ?? b[0]?.bottom ?? b[0]?.min?.y ?? (b[0]?.y == undefined ? b[2] : b[1]?.y == undefined ? 0 : Math.min(b[0]?.y, b[1]?.y)),
+            b[0]?.yMax ?? b[0]?.top ?? b[0]?.max?.y ?? (b[0]?.y == undefined ? b[3] : b[1]?.y == undefined ? b[0]?.y : Math.max(b[0]?.y, b[1]?.y)),
+            b[0]?.ySize ?? b[0]?.height ?? b[0]?.size?.y,
         ];
         this.xMin = isFinite(box[0]) ? box[0] : 0;
         this.xMax = isFinite(box[1]) ? box[1] : this.xMin + box[2];
@@ -688,15 +688,15 @@ globalThis.Box3 = class Box3 {
     set(...b) {
         b = b.flat(Infinity);
         let box = [
-            b[0]?.xMin ?? b[0]?.left ?? b[0],
-            b[0]?.xMax ?? b[0]?.right ?? b[1],
-            b[0]?.xSize ?? b[0]?.width,
-            b[0]?.yMin ?? b[0]?.bottom ?? b[2],
-            b[0]?.yMax ?? b[0]?.top ?? b[3],
-            b[0]?.ySize ?? b[0]?.height,
-            b[0]?.zMin ?? b[0]?.back ?? b[4],
-            b[0]?.zMax ?? b[0]?.front ?? b[5],
-            b[0]?.zSize ?? b[0]?.depth,
+            b[0]?.xMin ?? b[0]?.left ?? b[0]?.min?.x ?? (b[0]?.x == undefined ? b[0] : b[1]?.x == undefined ? 0 : Math.min(b[0]?.x, b[1]?.x)),
+            b[0]?.xMax ?? b[0]?.right ?? b[0]?.max?.x ?? (b[0]?.x == undefined ? b[1] : b[1]?.x == undefined ? b[0]?.x : Math.max(b[0]?.x, b[1]?.x)),
+            b[0]?.xSize ?? b[0]?.width ?? b[0]?.size?.x,
+            b[0]?.yMin ?? b[0]?.bottom ?? b[0]?.min?.y ?? (b[0]?.y == undefined ? b[2] : b[1]?.y == undefined ? 0 : Math.min(b[0]?.y, b[1]?.y)),
+            b[0]?.yMax ?? b[0]?.top ?? b[0]?.max?.y ?? (b[0]?.y == undefined ? b[3] : b[1]?.y == undefined ? b[0]?.y : Math.max(b[0]?.y, b[1]?.y)),
+            b[0]?.ySize ?? b[0]?.height ?? b[0]?.size?.y,
+            b[0]?.zMin ?? b[0]?.back ?? b[0]?.min?.z ?? (b[0]?.z == undefined ? b[4] : b[1]?.xz == undefined ? 0 : Math.min(b[0]?.z, b[1]?.z)),
+            b[0]?.zMax ?? b[0]?.front ?? b[0]?.max?.z ?? (b[0]?.z == undefined ? b[5] : b[1]?.z == undefined ? b[0]?.z : Math.max(b[0]?.z, b[1]?.z)),
+            b[0]?.zSize ?? b[0]?.depth ?? b[0]?.size?.z,
         ];
         this.xMin = isFinite(box[0]) ? box[0] : 0;
         this.xMax = isFinite(box[1]) ? box[1] : this.xMin + box[2];
