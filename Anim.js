@@ -6,7 +6,7 @@ including commercially, and without including this license.
 */
 
 globalThis.Anim = class Anim {
-    constructor(axes = {x: 0}, accel = 10000, time) {
+    constructor(axes = 0 ?? {}, accel = 10000, time) {
         this.axes = axes;
         this.accel = accel;
         this.time = time;
@@ -87,7 +87,17 @@ globalThis.Anim = class Anim {
             this.#axes = Object.create(null);
             Object.assign(this.#axesProxy, axes);
             this.#startAnimationLoop();
+        } else if (isFinite(axes)) {
+            this.#axes = Object.create(null);
+            Object.assign(this.#axesProxy, {"": axes});
+            this.#startAnimationLoop();
         }
+    }
+    get axis() {
+        return this.#axesProxy[""];
+    }
+    set axis(axis) {
+        this.#axesProxy[""] = axis;
     }
 
     #values = new Proxy({}, {
@@ -107,6 +117,12 @@ globalThis.Anim = class Anim {
     }
     set values(values) {
         Object.assign(this.#values, values);
+    }
+    get value() {
+        return this.values[""];
+    }
+    set value(value) {
+        this.values[""] = value;
     }
 
     #accel = 10000;
