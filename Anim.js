@@ -35,7 +35,7 @@ globalThis.Anim = class Anim {
             },
             set: (_, property, value) => {
                 if (["min", "max", "target", "value", "vel"].includes(property) && !isNaN(value)) {
-                    let axes = this.#eval();
+                    let axes = this.snapshot;
                     axes[name][property] = +value;
                     this.#updateFunctions(axes);
                     this.#startAnimationLoop();
@@ -54,12 +54,12 @@ globalThis.Anim = class Anim {
         set: (_, property, value) => {
             if (value == undefined) {
                 delete this.#axes[property];
-                this.#updateFunctions(this.#eval());
+                this.#updateFunctions(this.snapshot);
             } else if (!this.#axes[property]) {
                 this.#axes[`${property}`] = this.#createAxis(`${property}`);
             }
             if (value instanceof Object) {
-                let axes = this.#eval();
+                let axes = this.snapshot;
                 ["min", "max", "target", "value", "vel"].forEach(field => {
                     if (field in value && !isNaN(value[field])) {
                         axes[`${property}`][field] = +value[field];
@@ -67,7 +67,7 @@ globalThis.Anim = class Anim {
                 });
                 this.#updateFunctions(axes);
             } else if (!isNaN(value)) {
-                let axes = this.#eval();
+                let axes = this.snapshot;
                 axes[`${property}`].value = axes[`${property}`].target = +value;
                 axes[`${property}`].vel = 0;
                 this.#updateFunctions(axes);
@@ -100,18 +100,78 @@ globalThis.Anim = class Anim {
         this.#axesProxy[""] = axis;
     }
 
-    #values = new Proxy({}, {
-        get: (_, property) => this.#axes[property]?.proxy?.value,
-        set: (_, property, value) => {
-            if (property in this.#axes) {
-                this.#axes[property].proxy.target = value;
-            }
-            return true;
-        },
-        has: (_, property) => property in this.#axes,
-        ownKeys: () => Object.keys(this.#axes),
-        getOwnPropertyDescriptor: (_, property) => property in this.#axes ? {value: this.#axes[property].proxy.values, writable: false, enumerable: true, configurable: false} : undefined,
-    });
+    #axisPropertyProxy(property) {
+        return new Proxy({}, {
+            get: (_, axis) => this.#axes[axis]?.proxy?.[property],
+            set: (_, axis, value) => {
+                if (axis in this.#axes) {
+                    this.#axes[axis].proxy[property] = value;
+                }
+                return true;
+            },
+            has: (_, axis) => axis in this.#axes,
+            ownKeys: () => Object.keys(this.#axes),
+            getOwnPropertyDescriptor: (_, axis) => axis in this.#axes ? {value: this.#axes[axis].proxy[property], writable: false, enumerable: true, configurable: false} : undefined,
+        });
+    }
+
+    #mins = this.#axisPropertyProxy("min");
+    get mins() {
+        return this.#mins;
+    }
+    set mins(mins) {
+        Object.assign(this.#mins, mins);
+    }
+    get min() {
+        return this.mins[""];
+    }
+    set min(min) {
+        this.mins[""] = min;
+    }
+
+    #maxs = this.#axisPropertyProxy("max");
+    get maxs() {
+        return this.#maxs;
+    }
+    set maxs(maxs) {
+        Object.assign(this.#maxs, maxs);
+    }
+    get max() {
+        return this.maxs[""];
+    }
+    set max(max) {
+        this.maxs[""] = max;
+    }
+
+    #targets = this.#axisPropertyProxy("target");
+    get targets() {
+        return this.#targets;
+    }
+    set targets(targets) {
+        Object.assign(this.#targets, targets);
+    }
+    get target() {
+        return this.targets[""];
+    }
+    set target(target) {
+        this.targets[""] = target;
+    }
+
+    #vels = this.#axisPropertyProxy("vel");
+    get vels() {
+        return this.#vels;
+    }
+    set vels(vels) {
+        Object.assign(this.#vels, vels);
+    }
+    get vel() {
+        return this.vels[""];
+    }
+    set vel(vel) {
+        this.vels[""] = vel;
+    }
+
+    #values = this.#axisPropertyProxy("value");
     get values() {
         return this.#values;
     }
@@ -131,7 +191,7 @@ globalThis.Anim = class Anim {
     }
     set accel(accel) {
         if (!isNaN(accel) && +accel > 0) {
-            let axes = this.#eval();
+            let axes = this.snapshot;
             this.#accel = +accel;
             this.#updateFunctions(axes);
         }
@@ -142,28 +202,13 @@ globalThis.Anim = class Anim {
         return this.#time;
     }
     set time(time) {
-        let axes = this.#eval();
+        let axes = this.snapshot;
         this.#time = !isNaN(time) ? +time : time instanceof Object ? time : undefined;
         this.#updateFunctions(axes);
     }
 
     get timeLeft() {
         return Math.max(0, Object.values(this.#axes).reduce((end, axis) => Math.max(end, axis.functions?.at(-1)?.end ?? 0), 0) - (typeof this.#time == "number" ? this.#time : this.#time?.sec ?? performance.now() / 1e3));
-    }
-
-    skip(ratio = 1) {
-        if (0 < ratio) {
-            if (ratio < 1) {
-                let t = +ratio * this.timeLeft;
-                Object.keys(this.#axes).forEach(axis => this.#axes[axis].functions.forEach(f => {
-                    f.n0 += f.n1 * t + f.n2 * t ** 2;
-                    f.n1 += 2 * f.n2 * t;
-                    f.end -= t;
-                }));
-            } else {
-                Object.keys(this.#axes).forEach(axis => this.#axes[axis].functions = []);
-            }
-        }
     }
 
     #callback = undefined;
@@ -200,11 +245,36 @@ globalThis.Anim = class Anim {
         }
     }
 
-    #eval() {
-        let time = typeof this.#time == "number" ? this.#time : this.#time?.sec ?? performance.now() / 1e3;
+    to(targets) {
+        if (targets instanceof Object) {
+            this.targets = targets;
+        } else if (isFinite(targets)) {
+            this.target = targets;
+        }
+        return this;
+    }
+
+    skip(ratio = 1) {
+        if (0 < ratio) {
+            if (ratio < 1) {
+                let t = +ratio * this.timeLeft;
+                Object.keys(this.#axes).forEach(axis => this.#axes[axis].functions.forEach(f => {
+                    f.n0 += f.n1 * t + f.n2 * t ** 2;
+                    f.n1 += 2 * f.n2 * t;
+                    f.end -= t;
+                }));
+            } else {
+                Object.keys(this.#axes).forEach(axis => this.#axes[axis].functions = []);
+            }
+        }
+        return this;
+    }
+
+    get snapshot() {
+        let t = typeof this.#time == "number" ? this.#time : this.#time?.sec ?? performance.now() / 1e3;
         return Object.fromEntries(Object.keys(this.#axes).map(axis => {
-            let f = this.#axes[axis].functions.find(f => time <= f.end);
-            return [axis, {min: this.#axes[axis].min, max: this.#axes[axis].max, target: this.#axes[axis].target, value: f ? f.n0 + f.n1 * time + f.n2 * time ** 2 : this.#axes[axis].target, vel: f ? f.n1 + f.n2 * time * 2 : 0}];
+            let f = this.#axes[axis].functions.find(f => t <= f.end);
+            return [axis, {min: this.#axes[axis].min, max: this.#axes[axis].max, target: this.#axes[axis].target, value: f ? f.n0 + f.n1 * t + f.n2 * t ** 2 : this.#axes[axis].target, vel: f ? f.n1 + f.n2 * t * 2 : 0}];
         }));
     }
 
