@@ -334,6 +334,27 @@ globalThis.Box2 = class Box2 {
         v = v[0] instanceof Object ? v[0] : new Vec2(...v);
         return this.xMin <= v.x && v.x <= this.xMax && this.yMin <= v.y && v.y <= this.yMax;
     }
+    floor() {
+        this.xMin = Math.ceil(this.xMin);
+        this.xMax = Math.floor(this.xMin);
+        this.yMin = Math.ceil(this.yMin);
+        this.yMax = Math.floor(this.yMax);
+        return this;
+    }
+    ceil() {
+        this.xMin = Math.floor(this.xMin);
+        this.xMax = Math.ceil(this.xMin);
+        this.yMin = Math.floor(this.yMin);
+        this.yMax = Math.ceil(this.yMax);
+        return this;
+    }
+    round() {
+        this.xMin = Math.round(this.xMin);
+        this.xMax = Math.round(this.xMin);
+        this.yMin = Math.round(this.yMin);
+        this.yMax = Math.round(this.yMax);
+        return this;
+    }
 
     transformMat3(from = new Box2(0, 1, 0, 1)) {
         return new Mat3(this.xSize / from.xSize, 0, 0, 0, this.ySize / from.ySize, 0, this.xMin - from.xMin * this.xSize / from.xSize, this.yMin - from.yMin * this.ySize / from.ySize, 1);
@@ -821,6 +842,33 @@ globalThis.Box3 = class Box3 {
         v = v[0] instanceof Object ? v[0] : new Vec3(...v);
         return this.xMin <= v.x && v.x <= this.xMax && this.yMin <= v.y && v.y <= this.yMax && this.zMin <= v.z && v.z <= this.zMax;
     }
+    floor() {
+        this.xMin = Math.ceil(this.xMin);
+        this.xMax = Math.floor(this.xMin);
+        this.yMin = Math.ceil(this.yMin);
+        this.yMax = Math.floor(this.yMax);
+        this.zMin = Math.ceil(this.zMin);
+        this.zMax = Math.floor(this.zMax);
+        return this;
+    }
+    ceil() {
+        this.xMin = Math.floor(this.xMin);
+        this.xMax = Math.ceil(this.xMin);
+        this.yMin = Math.floor(this.yMin);
+        this.yMax = Math.ceil(this.yMax);
+        this.zMin = Math.floor(this.zMin);
+        this.zMax = Math.ceil(this.zMax);
+        return this;
+    }
+    round() {
+        this.xMin = Math.round(this.xMin);
+        this.xMax = Math.round(this.xMin);
+        this.yMin = Math.round(this.yMin);
+        this.yMax = Math.round(this.yMax);
+        this.zMin = Math.round(this.zMin);
+        this.zMax = Math.round(this.zMax);
+        return this;
+    }
 
     transformMat3(from = new Box3(0, 1, 0, 1, 0, 1)) {
         return new Mat3(this.xSize / from.xSize, 0, 0, 0, 0, this.ySize / from.ySize, 0, 0, 0, 0, this.zSize / from.zSize, 0, this.xMin - from.xMin * this.xSize / from.xSize, this.yMin - from.yMin * this.ySize / from.ySize, this.zMin - from.zMin * this.zSize / from.zSize, 1);
@@ -1092,6 +1140,27 @@ globalThis.Padding2 = class Padding2 {
         if (!isFinite(box[3]) && isFinite(box[4])) {
             this.yMinus = this.yPlus - box[5];
         }
+        return this;
+    }
+    floor() {
+        this.xMinus = Math.floor(this.xMinus);
+        this.xPlus = Math.floor(this.xPlus);
+        this.yMinus = Math.floor(this.yMinus);
+        this.yPlus = Math.floor(this.yPlus);
+        return this;
+    }
+    ceil() {
+        this.xMinus = Math.ceil(this.xMinus);
+        this.xPlus = Math.ceil(this.xPlus);
+        this.yMinus = Math.ceil(this.yMinus);
+        this.yPlus = Math.ceil(this.yPlus);
+        return this;
+    }
+    round() {
+        this.xMinus = Math.round(this.xMinus);
+        this.xPlus = Math.round(this.xPlus);
+        this.yMinus = Math.round(this.yMinus);
+        this.yPlus = Math.round(this.yPlus);
         return this;
     }
 };

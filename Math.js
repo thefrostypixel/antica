@@ -119,6 +119,21 @@ globalThis.Vec2 = class Vec2 {
         this.y /= this.x ** 2 + this.y ** 2 ?? Infinity;
         return this;
     }
+    floor() {
+        this.x = Math.floor(this.x);
+        this.y = Math.floor(this.y);
+        return this;
+    }
+    ceil() {
+        this.x = Math.ceil(this.x);
+        this.y = Math.ceil(this.y);
+        return this;
+    }
+    round() {
+        this.x = Math.round(this.x);
+        this.y = Math.round(this.y);
+        return this;
+    }
 
     dist(...v) {
         v = v[0] instanceof Object ? v[0] : new Vec2(...v);
@@ -260,6 +275,24 @@ globalThis.Vec3 = class Vec3 {
         this.x /= this.x ** 2 + this.y ** 2 + this.z ** 2 ?? Infinity;
         this.y /= this.x ** 2 + this.y ** 2 + this.z ** 2 ?? Infinity;
         this.z /= this.x ** 2 + this.y ** 2 + this.z ** 2 ?? Infinity;
+        return this;
+    }
+    floor() {
+        this.x = Math.floor(this.x);
+        this.y = Math.floor(this.y);
+        this.z = Math.floor(this.z);
+        return this;
+    }
+    ceil() {
+        this.x = Math.ceil(this.x);
+        this.y = Math.ceil(this.y);
+        this.z = Math.ceil(this.z);
+        return this;
+    }
+    round() {
+        this.x = Math.round(this.x);
+        this.y = Math.round(this.y);
+        this.z = Math.round(this.z);
         return this;
     }
 
@@ -418,6 +451,27 @@ globalThis.Vec4 = class Vec4 {
         this.y *= -1;
         this.z *= -1;
         this.w *= -1;
+        return this;
+    }
+    floor() {
+        this.x = Math.floor(this.x);
+        this.y = Math.floor(this.y);
+        this.z = Math.floor(this.z);
+        this.w = Math.floor(this.w);
+        return this;
+    }
+    ceil() {
+        this.x = Math.ceil(this.x);
+        this.y = Math.ceil(this.y);
+        this.z = Math.ceil(this.z);
+        this.w = Math.ceil(this.w);
+        return this;
+    }
+    round() {
+        this.x = Math.round(this.x);
+        this.y = Math.round(this.y);
+        this.z = Math.round(this.z);
+        this.w = Math.round(this.w);
         return this;
     }
 
