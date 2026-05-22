@@ -131,13 +131,13 @@ globalThis.Font = class Font {
 
     break = (text = "", maxWidth = 0) => {
         let words = text.split(" ");
-        return words.reduce((lines, word) => {
+        return text ? words.reduce((lines, word) => {
             if (maxWidth < this.#metrics(`${lines.at(-1)} ${word}`).fine.right) {
                 lines.push(word);
             } else {
                 lines[lines.length - 1] += ` ${word}`;
             }
             return lines;
-        }, [words.shift()]);
+        }, [words.shift()]) : [];
     };
 };
