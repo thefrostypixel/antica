@@ -128,4 +128,16 @@ globalThis.Font = class Font {
         let texture = this.monoTexture(target.renderer, text, pos.copy.sub(offset));
         return target.renderer.drawColoredCopy(texture, target, undefined, new Box2(texture).move(offset), this.color ?? Color.okLab(.95), blending);
     };
+
+    break = (text = "", maxWidth = 0) => {
+        let words = text.split(" ");
+        return words.reduce((lines, word) => {
+            if (maxWidth < this.#metrics(`${lines.at(-1)} ${word}`).fine.right) {
+                lines.push(word);
+            } else {
+                lines[lines.length - 1] += ` ${word}`;
+            }
+            return lines;
+        }, [words.shift()]);
+    };
 };
