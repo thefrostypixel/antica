@@ -36,10 +36,10 @@ globalThis.Controls = class Controls {
         }
 
         get keys() {
-            return [...this.#obj.keys];
+            return Array.from(this.#obj.keys);
         }
         asControl(ignoreModifierSides = false, useShortcutKey = false) {
-            let keys = ignoreModifierSides ? [...new Set(this.keys.map(key => key.modifierCode || key.code))] : this.keys.map(key => key.code);
+            let keys = ignoreModifierSides ? Array.from(new Set(this.keys.map(key => key.modifierCode || key.code))) : this.keys.map(key => key.code);
             if (keys.length == 1 && useShortcutKey && keys[0].indexOf(/Mac|iPhone|iPad|iPod/i.test(navigator.userAgent) ? "Meta" : "Control") > -1) {
                 return {shortcutKeyRequired: true};
             } else if (keys.length == 1) {
@@ -106,8 +106,8 @@ globalThis.Controls = class Controls {
                     this.activeControls[control].pressed = false;
                 } else {
                     this.activeControls[control] = {
-                        time: this.time && this.time.snapshot(),
-                        mouse: this.mouse.snapshot(),
+                        time: this.time?.snapshot,
+                        mouse: this.mouse?.snapshot,
                         heldKeys: controlsHeldKeys,
                         pressed: true,
                     };
@@ -175,18 +175,23 @@ globalThis.Controls = class Controls {
         return obj.collector;
     }
 
-    #mouseActions = {};
-    #mouse = new Mouse(undefined, undefined, this.#mouseActions);
-    get mouse() {
-        return this.#mouse;
-    }
-
     #mouseElement = document;
     get mouseElement() {
         return this.#mouseElement;
     }
     set mouseElement(mouseElement) {
         this.#mouseElement = mouseElement == document || mouseElement instanceof Element ? mouseElement : this.#mouseElement;
+    }
+
+    #yUp;
+    get yUp() {
+        return this.#yUp;
+    }
+
+    #mouseActions = {};
+    #mouse;
+    get mouse() {
+        return this.#mouse;
     }
 
     #focused = document.hasFocus();
@@ -204,10 +209,11 @@ globalThis.Controls = class Controls {
 
     #events = {};
 
-    constructor(time = undefined, definedControls = {}, mouseElement = document, confirmExit = false) {
+    constructor(time = undefined, definedControls = {}, mouseElement = document, yUp = false, confirmExit = false) {
         this.time = time;
         this.definedControls = definedControls;
         this.mouseElement = mouseElement;
+        this.#mouse = new Mouse(undefined, undefined, this.#mouseActions, this.#yUp = !!yUp);
         this.confirmExit = confirmExit;
         // Keyboard
         this.#events.onKeyDown = e => {
@@ -324,7 +330,7 @@ globalThis.Controls = class Controls {
                     clientX += e.touches[i].clientX / e.touches.length;
                     clientY += e.touches[i].clientY / e.touches.length;
                 }
-                this.#events.onMouseMove(new MouseEvent("mousemove", {clientX, clientY, movementX: e.type == "touchmove" ? clientX - this.mouse.pos.x : 0, movementY: e.type == "touchmove" ? clientY - this.mouse.pos.y : 0}));
+                this.#events.onMouseMove(new MouseEvent("mousemove", {clientX, clientY, movementX: e.type == "touchmove" ? clientX - this.mouse.pos.x : 0, movementY: e.type == "touchmove" ? clientY - this.mouse.pos.y * (this.yUp ? -1 : 1) : 0}));
             }
         };
         window.addEventListener("touchmove", this.#events.onTouchMove);
@@ -407,8 +413,8 @@ globalThis.Key = class Key {
     constructor(device = "Unknown", time, mouse) {
         this.#device = typeof device === "string" ? device : "Unknown";
         this.#tDevice = `key.${this.#device.toLowerCase()}`;
-        this.#time = time && time.snapshot ? time.snapshot() : undefined;
-        this.#mouse = mouse && mouse.snapshot ? mouse.snapshot() : undefined;
+        this.#time = time?.snapshot;
+        this.#mouse = mouse?.snapshot;
     }
 };
 globalThis.KeyboardKey = class KeyboardKey extends globalThis.Key {
@@ -627,17 +633,17 @@ globalThis.MouseButton = class MouseButton extends globalThis.Key {
 globalThis.Mouse = class Mouse {
     #pos;
     get pos() {
-        return {...this.#pos};
+        return this.#pos.copy;
     }
 
-    #moved = {x: 0, y: 0};
+    #moved = new Vec2();
     get moved() {
-        return {...this.#moved};
+        return this.#moved;
     }
 
-    #scrolled = {x: 0, y: 0};
+    #scrolled = new Vec2();
     get scrolled() {
-        return {...this.#scrolled};
+        return this.#scrolled;
     }
 
     #captured;
@@ -645,31 +651,32 @@ globalThis.Mouse = class Mouse {
         return this.#captured;
     }
 
-    snapshot() {
+    #yUp;
+    get yUp() {
+        return this.#yUp;
+    }
+
+    get snapshot() {
         return new MouseSnapshot(this);
     }
 
-    constructor(pos = {x: 0, y: 0}, captured = false, actions = {}) {
-        this.#pos = pos = {...pos};
+    constructor(pos = new Pos2(), captured = false, actions = {}, yUp = false) {
+        this.#pos = pos = pos.copy;
         this.#captured = captured;
-        let moved = {x: 0, y: 0};
-        let scrolled = {x: 0, y: 0};
+        this.#yUp = yUp;
+        let moved = new Vec2();
+        let scrolled = new Vec2();
         actions.onMove = e => {
-            pos.x = e.clientX;
-            pos.y = e.clientY;
-            moved.x += e.movementX;
-            moved.y += e.movementY;
+            pos.set(e.clientX, e.clientY * (yUp ? -1 : 1));
+            moved.add(e.movementX, e.movementY * (yUp ? -1 : 1));
         };
-        actions.onScroll = e => {
-            scrolled.x += e.deltaX;
-            scrolled.y += e.deltaY;
-        };
+        actions.onScroll = e => scrolled.add(e.deltaX, e.deltaY);
         actions.apply = (captured = this.captured) => {
-            this.#pos = {...pos};
+            this.#pos = pos.copy;
             this.#moved = moved;
             this.#scrolled = scrolled;
-            moved = {x: 0, y: 0};
-            scrolled = {x: 0, y: 0};
+            moved = new Vec2();
+            scrolled = new Vec2();
             this.#captured = captured;
         };
     }
@@ -677,17 +684,17 @@ globalThis.Mouse = class Mouse {
 globalThis.MouseSnapshot = class MouseSnapshot {
     #pos;
     get pos() {
-        return {...this.#pos};
+        return this.#pos.copy;
     }
 
     #move;
     get move() {
-        return {...this.#move};
+        return this.#move.copy;
     }
 
     #wheel;
     get wheel() {
-        return {...this.#wheel};
+        return this.#wheel.copy;
     }
 
     #captured;
@@ -695,10 +702,16 @@ globalThis.MouseSnapshot = class MouseSnapshot {
         return this.#captured;
     }
 
+    #yUp;
+    get yUp() {
+        return this.#yUp;
+    }
+
     constructor(mouse = new Mouse()) {
-        this.#pos = {...mouse.pos};
-        this.#move = {...mouse.move};
-        this.#wheel = {...mouse.wheel};
+        this.#pos = mouse.pos.copy;
+        this.#move = mouse.move.copy;
+        this.#wheel = mouse.wheel.copy;
         this.#captured = mouse.captured;
+        this.#yUp = mouse.yUp;
     }
 };

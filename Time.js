@@ -112,7 +112,7 @@ globalThis.Time = class Time {
             this.#lastTicks = this.#lastTicks.filter(t => t > now - 998).concat(now);
             if (f instanceof Function) {
                 try {
-                    f(this.snapshot());
+                    f(this.snapshot);
                 } catch (e) {
                     console.error(e);
                 }
@@ -170,7 +170,7 @@ globalThis.Time = class Time {
     /**
      * Get a snapshot of the time.
      */
-    snapshot() {
+    get snapshot() {
         return new Time.Snapshot(this);
     }
 
