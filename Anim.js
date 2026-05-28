@@ -111,7 +111,7 @@ globalThis.Anim = class Anim {
             },
             has: (_, axis) => axis in this.#axes,
             ownKeys: () => Object.keys(this.#axes),
-            getOwnPropertyDescriptor: (_, axis) => axis in this.#axes ? {value: this.#axes[axis].proxy[property], writable: false, enumerable: true, configurable: false} : undefined,
+            getOwnPropertyDescriptor: (_, axis) => axis in this.#axes ? {value: this.#axes[axis].proxy[property], writable: false, enumerable: true, configurable: true} : undefined,
         });
     }
 
