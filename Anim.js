@@ -35,9 +35,10 @@ globalThis.Anim = class Anim {
             },
             set: (_, property, value) => {
                 if (["min", "max", "target", "value", "vel"].includes(property) && !isNaN(value)) {
-                    let axes = this.snapshot;
+                    let t = this.#t;
+                    let axes = this.#snapshot(t);
                     axes[name][property] = +value;
-                    this.#updateFunctions(axes);
+                    this.#updateFunctions(axes, t);
                     this.#startAnimationLoop();
                 }
                 return true;
@@ -50,34 +51,35 @@ globalThis.Anim = class Anim {
     }
     #axes = Object.create(null);
     #axesProxy = new Proxy({}, {
-        get: (_, property) => this.#axes[property]?.proxy,
-        set: (_, property, value) => {
+        get: (_, axis) => this.#axes[axis]?.proxy,
+        set: (_, axis, value) => {
+            let t = this.#t;
             if (value == undefined) {
-                delete this.#axes[property];
-                this.#updateFunctions(this.snapshot);
-            } else if (!this.#axes[property]) {
-                this.#axes[`${property}`] = this.#createAxis(`${property}`);
+                delete this.#axes[axis];
+                this.#updateFunctions(this.#snapshot(t), t);
+            } else if (!this.#axes[axis]) {
+                this.#axes[`${axis}`] = this.#createAxis(`${axis}`);
             }
             if (value instanceof Object) {
-                let axes = this.snapshot;
-                ["min", "max", "target", "value", "vel"].forEach(field => {
-                    if (field in value && !isNaN(value[field])) {
-                        axes[`${property}`][field] = +value[field];
+                let axes = this.#snapshot(t);
+                ["min", "max", "target", "value", "vel"].forEach(property => {
+                    if (property in value && !isNaN(value[property])) {
+                        axes[`${axis}`][property] = +value[property];
                     }
                 });
-                this.#updateFunctions(axes);
+                this.#updateFunctions(axes, t);
             } else if (!isNaN(value)) {
-                let axes = this.snapshot;
-                axes[`${property}`].value = axes[`${property}`].target = +value;
-                axes[`${property}`].vel = 0;
-                this.#updateFunctions(axes);
+                let axes = this.#snapshot(t);
+                axes[`${axis}`].value = axes[`${axis}`].target = +value;
+                axes[`${axis}`].vel = 0;
+                this.#updateFunctions(axes, t);
             }
             return true;
         },
-        deleteProperty: (_, property) => this.#axesProxy[property] = undefined,
-        has: (_, property) => property in this.#axes,
+        deleteProperty: (_, axis) => this.#axesProxy[axis] = undefined,
+        has: (_, axis) => axis in this.#axes,
         ownKeys: () => Object.keys(this.#axes),
-        getOwnPropertyDescriptor: (_, property) => property in this.#axes ? {value: this.#axes[property].proxy, writable: true, enumerable: true, configurable: true} : undefined,
+        getOwnPropertyDescriptor: (_, axis) => axis in this.#axes ? {value: this.#axes[axis].proxy, writable: true, enumerable: true, configurable: true} : undefined,
     });
     get axes() {
         return this.#axesProxy;
@@ -114,13 +116,25 @@ globalThis.Anim = class Anim {
             getOwnPropertyDescriptor: (_, axis) => axis in this.#axes ? {value: this.#axes[axis].proxy[property], writable: false, enumerable: true, configurable: true} : undefined,
         });
     }
+    #setAxisProperty(property, values) {
+        if (values instanceof Object) {
+            let t = this.#t;
+            let axes = this.#snapshot(t);
+            Object.keys(values).forEach(axis => {
+                if (axis in this.#axes) {
+                    axes[axis][property] = +values[axis];
+                }
+            });
+            this.#updateFunctions(axes, t);
+        }
+    }
 
     #mins = this.#axisPropertyProxy("min");
     get mins() {
         return this.#mins;
     }
     set mins(mins) {
-        Object.assign(this.#mins, mins);
+        this.#setAxisProperty("min", mins);
     }
     get min() {
         return this.mins[""];
@@ -134,7 +148,7 @@ globalThis.Anim = class Anim {
         return this.#maxs;
     }
     set maxs(maxs) {
-        Object.assign(this.#maxs, maxs);
+        this.#setAxisProperty("max", maxs);
     }
     get max() {
         return this.maxs[""];
@@ -148,7 +162,7 @@ globalThis.Anim = class Anim {
         return this.#targets;
     }
     set targets(targets) {
-        Object.assign(this.#targets, targets);
+        this.#setAxisProperty("target", targets);
     }
     get target() {
         return this.targets[""];
@@ -162,7 +176,7 @@ globalThis.Anim = class Anim {
         return this.#vels;
     }
     set vels(vels) {
-        Object.assign(this.#vels, vels);
+        this.#setAxisProperty("vel", vels);
     }
     get vel() {
         return this.vels[""];
@@ -176,7 +190,7 @@ globalThis.Anim = class Anim {
         return this.#values;
     }
     set values(values) {
-        Object.assign(this.#values, values);
+        this.#setAxisProperty("value", values);
     }
     get value() {
         return this.values[""];
@@ -191,9 +205,10 @@ globalThis.Anim = class Anim {
     }
     set accel(accel) {
         if (!isNaN(accel) && +accel > 0) {
-            let axes = this.snapshot;
+            let t = this.#t;
+            let axes = this.#snapshot(t);
             this.#accel = +accel;
-            this.#updateFunctions(axes);
+            this.#updateFunctions(axes, t);
         }
     }
 
@@ -202,13 +217,17 @@ globalThis.Anim = class Anim {
         return this.#time;
     }
     set time(time) {
-        let axes = this.snapshot;
+        let t = typeof this.#time == "number" ? this.#time : this.#time?.sec ?? performance.now() / 1e3;
+        let axes = this.#snapshot(t);
         this.#time = !isNaN(time) ? +time : time instanceof Object ? time : undefined;
-        this.#updateFunctions(axes);
+        this.#updateFunctions(axes, t);
+    }
+    get #t() {
+        return typeof this.#time == "number" ? this.#time : this.#time?.sec ?? performance.now() / 1e3;
     }
 
     get timeLeft() {
-        return Math.max(0, Object.values(this.#axes).reduce((end, axis) => Math.max(end, axis.functions?.at(-1)?.end ?? 0), 0) - (typeof this.#time == "number" ? this.#time : this.#time?.sec ?? performance.now() / 1e3));
+        return Math.max(0, Object.values(this.#axes).reduce((end, axis) => Math.max(end, axis.functions?.at(-1)?.end ?? 0), 0) - this.#t);
     }
 
     #callback = undefined;
@@ -245,16 +264,31 @@ globalThis.Anim = class Anim {
         }
     }
 
-    to(targets) {
+    to = targets => {
         if (targets instanceof Object) {
             this.targets = targets;
         } else if (isFinite(targets)) {
             this.target = targets;
         }
         return this;
-    }
-
-    skip(ratio = 1) {
+    };
+    offset = offsets => {
+        if (isFinite(offsets)) {
+            offsets = {"": offsets};
+        }
+        if (offsets instanceof Object) {
+            let t = this.#t;
+            let axes = this.#snapshot(t);
+            Object.keys(axes).forEach(axis => {
+                axes[axis].target += +offsets[axis];
+                axes[axis].vel += +offsets[axis];
+                axes[axis].value += +offsets[axis];
+            });
+            this.#updateFunctions(axes, t);
+        }
+        return this;
+    };
+    skip = (ratio = 1) => {
         if (0 < ratio) {
             if (ratio < 1) {
                 let t = +ratio * this.timeLeft;
@@ -268,17 +302,19 @@ globalThis.Anim = class Anim {
             }
         }
         return this;
-    }
+    };
 
-    get snapshot() {
-        let t = typeof this.#time == "number" ? this.#time : this.#time?.sec ?? performance.now() / 1e3;
+    #snapshot(t = this.#t) {
         return Object.fromEntries(Object.keys(this.#axes).map(axis => {
             let f = this.#axes[axis].functions.find(f => t <= f.end);
             return [axis, {min: this.#axes[axis].min, max: this.#axes[axis].max, target: this.#axes[axis].target, value: f ? f.n0 + f.n1 * t + f.n2 * t ** 2 : this.#axes[axis].target, vel: f ? f.n1 + f.n2 * t * 2 : 0}];
         }));
     }
+    get snapshot() {
+        return this.#snapshot();
+    }
 
-    #updateFunctions(axes = {x: {min: -Infinity, max: Infinity, target: 0, value: 0, vel: 0}}) {
+    #updateFunctions(axes = {x: {min: -Infinity, max: Infinity, target: 0, value: 0, vel: 0}}, t = this.#t) {
         let targets = [{}];
         Object.keys(axes).forEach(axis => {
             this.#axes[axis].min = axes[axis].min;
@@ -314,7 +350,7 @@ globalThis.Anim = class Anim {
                     let dot = Object.keys(axes).reduce((dot, axis) => dot + normalApproach[axis] * normalVel[axis], 0);
                     if (Math.abs(dot) < 1 - 1e-9) {
                         let drift = Object.fromEntries(Object.keys(axes).map(axis => [axis, normalVel[axis] - dot * normalApproach[axis]]));
-                        driftVel = Object.values(axes).reduce((driftMag, axis) => driftMag + drift[axis] ** 2, 0) ** .5;
+                        driftVel = Object.keys(axes).reduce((driftMag, axis) => driftMag + drift[axis] ** 2, 0) ** .5;
                         normalDrift = Object.fromEntries(Object.keys(axes).map(axis => [axis, drift[axis] / driftVel]));
                     }
                 }
@@ -342,14 +378,13 @@ globalThis.Anim = class Anim {
             return;
         }
         let {totalDist, normalApproach, approachVel, driftVel, normalDrift, duration, target} = best;
-        let time = typeof this.#time == "number" ? this.#time : this.#time?.sec ?? performance.now() / 1e3;
         let findFunctions = (dist, vel) => {
             let disc = ((vel * duration - dist * 2) ** 2 + (vel * duration) ** 2) ** .5;
             let x = (dist * 2 - vel * duration + disc) / duration ** 2;
             x = vel / x - duration < 1e-9 && vel / x + duration > -1e-9 ? x : (dist * 2 - vel * duration - disc) / duration ** 2;
             let rel = Math.min(Math.max(duration - vel / x, 0) / 2, duration);
-            let function1 = {start: time, end: time + rel, n0: x * time ** 2 / 2 - vel * time, n1: vel - x * time, n2: x / 2};
-            let function2 = {start: time + rel, end: time + duration, n0: -x * rel ** 2 - (vel + x * (rel * 2 + time / 2)) * time, n1: vel + x * rel * 2 + x * time, n2: -x / 2};
+            let function1 = {start: t, end: t + rel, n0: x * t ** 2 / 2 - vel * t, n1: vel - x * t, n2: x / 2};
+            let function2 = {start: t + rel, end: t + duration, n0: -x * rel ** 2 - (vel + x * (rel * 2 + t / 2)) * t, n1: vel + x * rel * 2 + x * t, n2: -x / 2};
             return rel < 1e-9 ? [function2] : rel > duration - 1e-9 ? [function1] : [function1, function2];
         };
         let approachFunctions = findFunctions(totalDist, approachVel);
@@ -374,32 +409,32 @@ globalThis.Anim = class Anim {
                     if (isFinite(axes[axis].min) && isFinite(axes[axis].max) && axes[axis].min != axes[axis].max) {
                         let min = Math.min(axes[axis].min, axes[axis].max);
                         let max = Math.max(axes[axis].min, axes[axis].max);
-                        let yMin = Math.min(n0 + n1 * time + n2 * time ** 2, n0 + n1 * end + n2 * end ** 2);
-                        let yMax = Math.max(n0 + n1 * time + n2 * time ** 2, n0 + n1 * end + n2 * end ** 2);
+                        let yMin = Math.min(n0 + n1 * t + n2 * t ** 2, n0 + n1 * end + n2 * end ** 2);
+                        let yMax = Math.max(n0 + n1 * t + n2 * t ** 2, n0 + n1 * end + n2 * end ** 2);
                         if (n2) {
                             let vertex = -n1 / (2 * n2);
-                            if (vertex > time && vertex < end) {
+                            if (vertex > t && vertex < end) {
                                 yMin = Math.min(yMin, n0 + n1 * vertex + n2 * vertex ** 2);
                                 yMax = Math.max(yMax, n0 + n1 * vertex + n2 * vertex ** 2);
                             }
                         }
-                        let loops = new Set([time, end]);
+                        let loops = new Set([t, end]);
                         for (let k = Math.floor((yMin - min) / (max - min)); k <= Math.ceil((yMax - min) / (max - min)); k++) {
                             if (n2) {
                                 let d = n1 ** 2 - 4 * n2 * (n0 - min - k * (max - min));
                                 if (d >= 0) {
                                     let x1 = (-n1 + d ** .5) / (2 * n2);
                                     let x2 = (-n1 - d ** .5) / (2 * n2);
-                                    if (x1 > time && x1 < end) {
+                                    if (x1 > t && x1 < end) {
                                         loops.add(x1);
                                     }
-                                    if (x2 > time && x2 < end) {
+                                    if (x2 > t && x2 < end) {
                                         loops.add(x2);
                                     }
                                 }
                             } else if (n1) {
                                 let x = -(n0 - min - k * (max - min)) / n1;
-                                if (x > time && x < end) {
+                                if (x > t && x < end) {
                                     loops.add(x);
                                 }
                             }
@@ -409,11 +444,11 @@ globalThis.Anim = class Anim {
                             this.#axes[axis].functions.push({start: loops[i], end: loops[i + 1], n0: n0 - Math.floor((n0 + n1 * (loops[i] + loops[i + 1]) / 2 + n2 * (loops[i] + loops[i + 1]) ** 2 / 4 - min) / (max - min)) * (max - min), n1, n2});
                         }
                     } else {
-                        this.#axes[axis].functions.push({start: time, end, n0, n1, n2});
+                        this.#axes[axis].functions.push({start: t, end, n0, n1, n2});
                     }
                 }
             });
-            time = end;
+            t = end;
         });
     }
 };
