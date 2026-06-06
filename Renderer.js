@@ -5,7 +5,7 @@ meaning you can use, modify, and distribute it however you want,
 including commercially, and without including this license.
 */
 
-globalThis.Renderer = class Renderer extends HTMLCanvasElement {
+globalThis.Renderer = class Renderer {
     static glDataTypes = {
         0x1406: "1f",
         0x8B50: "2f",
@@ -76,20 +76,16 @@ globalThis.Renderer = class Renderer extends HTMLCanvasElement {
         return {attributes, stride, interleaved, ...(indices ? {indices} : {})};
     }
 
-    static create() {
-        return document.createElement("canvas", {is: "renderer-canvas"});
-    }
-
-    static {
-        customElements.define("renderer-canvas", Renderer, {extends: "canvas"});
-    }
-
     constructor() {
-        super();
-        this.gl = this.#internal.gl = this.getContext("webgl2", {depth: false, stencil: false, antialias: false, premultipliedAlpha: true});
+        this.gl = this.#internal.gl = (this.#canvas = document.createElement("canvas")).getContext("webgl2", {depth: false, stencil: false, antialias: false, premultipliedAlpha: true});
         this.#internal.readBuffer = this.#internal.gl.createFramebuffer();
         this.#internal.drawBuffer = this.#internal.gl.createFramebuffer();
         this.#internal.freeTextureSlots = new Set(Array.from({length: this.#internal.gl.getParameter(0x8872)}, (_, i) => i));
+    }
+
+    #canvas;
+    get canvas() {
+        return this.#canvas;
     }
 
     static #lastId = 0;
@@ -160,25 +156,25 @@ globalThis.Renderer = class Renderer extends HTMLCanvasElement {
     }
 
     get size() {
-        return new Vec2(super.width, super.height);
+        return new Vec2(this.canvas.width, this.canvas.height);
     }
     get box() {
         return new Box2(0, this.size.x, 0, this.size.y);
     }
     get width() {
-        return super.width;
+        return this.canvas.width;
     }
     set width(width) {
         if (isFinite(width) && +width > 0) {
-            super.width = +width;
+            this.canvas.width = +width;
         }
     }
     get height() {
-        return super.height;
+        return this.canvas.height;
     }
     set height(height) {
         if (isFinite(height) && +height > 0) {
-            super.height = +height;
+            this.canvas.height = +height;
         }
     }
 
