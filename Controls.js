@@ -6,7 +6,7 @@ including commercially, and without including this license.
 */
 
 globalThis.Controls = class Controls {
-    static controlToString(control = {}, codeToString = code => Key.fromCode(code).name) {
+    static controlToString(control = {}, codeToString = code => Controls.Key.fromCode(code).name) {
         let required = [];
         let prohibited = [];
         if (control instanceof Array) {
@@ -25,7 +25,140 @@ globalThis.Controls = class Controls {
         return required.map(codeToString).join(" + ") + prohibited.map(code => ` - ${codeToString(code)}`);
     }
     static controlToHtml(control = {}) {
-        return this.controlToString(control, code => Key.fromCode(code).tName ? `<a t="${Key.fromCode(code).tName.replaceAll("&", "&amp;").replaceAll("\"", "&quot;")}"></a>` : `<a>${Key.fromCode(code).name.replaceAll("&", "&amp;").replaceAll("<", "&lt;")}</a>`);
+        return this.controlToString(control, code => Controls.Key.fromCode(code).tName ? `<a t="${Controls.Key.fromCode(code).tName.replaceAll("&", "&amp;").replaceAll("\"", "&quot;")}"></a>` : `<a>${Controls.Key.fromCode(code).name.replaceAll("&", "&amp;").replaceAll("<", "&lt;")}</a>`);
+    }
+
+    #events = {};
+    constructor(time = undefined, definedControls = {}, mouseElement = document, yUp = false, confirmExit = false) {
+        this.time = time;
+        this.definedControls = definedControls;
+        this.mouseElement = mouseElement;
+        this.#mouse = new Controls.Mouse(undefined, undefined, this.#mouseActions, this.#yUp = !!yUp);
+        this.confirmExit = confirmExit;
+        // Keyboard
+        this.#events.onKeyDown = e => {
+            let key = Controls.Key.fromEvent(e, this.time, this.mouse);
+            if (!this.#heldKeys[key.code]) {
+                this.#heldKeys[key.code] = key;
+                if (key.code == "Escape") {
+                    this.#keyCollectors.forEach(obj => {
+                        obj.keys = [];
+                        obj.done = true;
+                        obj.onChange(obj.collector);
+                        obj.onFinish(obj.collector);
+                    });
+                    this.#keyCollectors = [];
+                } else {
+                    this.#keyCollectors.forEach(obj => {
+                        obj.keys = this.heldKeys();
+                        obj.onChange(obj.collector);
+                    });
+                }
+            }
+            if (this.#keyCollectors.length || this.mouse.captured && key.code == "Tab") {
+                e.preventDefault();
+            }
+            Object.values(this.definedControls).filter(control => control).forEach(control => (control instanceof Array ? control : [control]).forEach(requiredKey => {
+                (requiredKey == key.code || requiredKey == key.modifier) && e.preventDefault();
+                (requiredKey && requiredKey.required || []).forEach(requiredKeyName => (requiredKeyName == key.code || requiredKeyName == key.modifier) && e.preventDefault());
+            }));
+        };
+        window.addEventListener("keydown", this.#events.onKeyDown);
+        this.#events.onKeyUp = e => {
+            let key = this.#heldKeys[Controls.Key.fromEvent(e, this.time, this.mouse).code];
+            if (key) {
+                delete this.#heldKeys[key.code];
+                if (!this.heldKeys().length) {
+                    this.#keyCollectors.forEach(obj => {
+                        obj.done = true;
+                        obj.onFinish(obj.collector);
+                    });
+                    this.#keyCollectors = [];
+                }
+            }
+        };
+        window.addEventListener("keyup", this.#events.onKeyUp);
+        // Mouse
+        this.#events.onMouseDown = e => {
+            if (this.mouseElement.contains(e.activeTarget)) {
+                this.#events.onKeyDown(e);
+                if (e.defaultPrevented && (e.button == 3 || e.button == 4)) {
+                    if (history.state && history.state.trapped) {
+                        this.#events.popStateActive = Time.ms;
+                        history.back();
+                    }
+                    history.pushState({trapped: true}, "", location.href);
+                }
+            }
+        };
+        window.addEventListener("mousedown", this.#events.onMouseDown);
+        this.#events.onMouseUp = e => {
+            let key = Controls.Key.fromEvent(e, this.time, this.mouse);
+            let preventNavigation = this.#keyCollectors.length;
+            Object.values(this.definedControls).filter(control => control).forEach(control => (control instanceof Array ? control : [control]).forEach(requiredKey => {
+                preventNavigation = preventNavigation || requiredKey == key.code || requiredKey == key.modifier;
+                (requiredKey && requiredKey.required || []).forEach(requiredKeyName => preventNavigation = preventNavigation || requiredKeyName == key.code || requiredKeyName == key.modifier);
+            }));
+            preventNavigation && (this.#events.popStateActive = Time.ms);
+            this.#events.onKeyUp(e);
+        };
+        this.#events.popStateActive = -Infinity;
+        this.#events.onPopState = () => {
+            if (this.#events.popStateActive + 100 > Time.ms) {
+                history.pushState({trapped: true}, "", location.href);
+            }
+        };
+        window.addEventListener("popstate", this.#events.onPopState);
+        window.addEventListener("mouseup", this.#events.onMouseUp);
+        this.#events.onContextMenu = e => this.mouseElement.contains(e.activeTarget) && e.preventDefault();
+        window.addEventListener("contextmenu", this.#events.onContextMenu);
+        this.#events.onMouseMove = e => this.mouseElement.contains(e.activeTarget) && this.#mouseActions.onMove(e);
+        window.addEventListener("mousemove", this.#events.onMouseMove);
+        this.#events.onWheel = e => this.mouseElement.contains(e.activeTarget) && this.#mouseActions.onScroll(e);
+        window.addEventListener("wheel", this.#events.onWheel);
+        // Touch
+        this.#events.onTouchStart = e => {
+            if (this.mouseElement.contains(e.activeTarget)) {
+                this.#events.onTouchMove(e);
+                if (e.touches.length == 1) {
+                    this.#events.onKeyDown(new MouseEvent("mousedown", {button: 0}));
+                } else {
+                    this.#events.onKeyUp(new MouseEvent("mouseup", {button: 0}));
+                    this.#events.onKeyDown(new MouseEvent("mousedown", {button: 2}));
+                }
+            }
+        };
+        window.addEventListener("touchstart", this.#events.onTouchStart);
+        this.#events.onTouchEnd = e => {
+            if (e.touches.length < 2) {
+                if (e.touches.length == 0) {
+                    this.#events.onKeyUp(new MouseEvent("mouseup", {button: 0}));
+                } else {
+                    this.#events.onKeyDown(new MouseEvent("mousedown", {button: 0}));
+                }
+                this.#events.onKeyUp(new MouseEvent("mouseup", {button: 2}));
+            }
+        };
+        window.addEventListener("touchend", this.#events.onTouchEnd);
+        this.#events.onTouchMove = e => {
+            if (this.mouseElement.contains(e.activeTarget)) {
+                let clientX = 0;
+                let clientY = 0;
+                for (let i = 0; i < e.touches.length; i++) {
+                    clientX += e.touches[i].clientX / e.touches.length;
+                    clientY += e.touches[i].clientY / e.touches.length;
+                }
+                this.#events.onMouseMove(new MouseEvent("mousemove", {clientX, clientY, movementX: e.type == "touchmove" ? clientX - this.mouse.pos.x : 0, movementY: e.type == "touchmove" ? clientY - this.mouse.pos.y * (this.yUp ? -1 : 1) : 0}));
+            }
+        };
+        window.addEventListener("touchmove", this.#events.onTouchMove);
+        // Window
+        this.#events.onBlur = () => this.#heldKeys = {};
+        window.addEventListener("blur", this.#events.onBlur);
+        this.#events.onPointerLockChange = () => this.#heldKeys = document.pointerLockElement ? this.#heldKeys : {};
+        document.addEventListener("pointerlockchange", this.#events.onPointerLockChange);
+        this.#events.onBeforeUnload = () => this.confirmExit ? true : undefined;
+        window.addEventListener("beforeunload", this.#events.onBeforeUnload);
     }
 
     #KeyCollector = class KeyCollector {
@@ -207,142 +340,6 @@ globalThis.Controls = class Controls {
         this.#confirmExit = !!confirmExit;
     }
 
-    #events = {};
-
-    constructor(time = undefined, definedControls = {}, mouseElement = document, yUp = false, confirmExit = false) {
-        this.time = time;
-        this.definedControls = definedControls;
-        this.mouseElement = mouseElement;
-        this.#mouse = new Mouse(undefined, undefined, this.#mouseActions, this.#yUp = !!yUp);
-        this.confirmExit = confirmExit;
-        // Keyboard
-        this.#events.onKeyDown = e => {
-            let key = Key.fromEvent(e, this.time, this.mouse);
-            if (!this.#heldKeys[key.code]) {
-                this.#heldKeys[key.code] = key;
-                if (key.code == "Escape") {
-                    this.#keyCollectors.forEach(obj => {
-                        obj.keys = [];
-                        obj.done = true;
-                        obj.onChange(obj.collector);
-                        obj.onFinish(obj.collector);
-                    });
-                    this.#keyCollectors = [];
-                } else {
-                    this.#keyCollectors.forEach(obj => {
-                        obj.keys = this.heldKeys();
-                        obj.onChange(obj.collector);
-                    });
-                }
-            }
-            if (this.#keyCollectors.length || this.mouse.captured && key.code == "Tab") {
-                e.preventDefault();
-            }
-            Object.values(this.definedControls).filter(control => control).forEach(control => (control instanceof Array ? control : [control]).forEach(requiredKey => {
-                (requiredKey == key.code || requiredKey == key.modifier) && e.preventDefault();
-                (requiredKey && requiredKey.required || []).forEach(requiredKeyName => (requiredKeyName == key.code || requiredKeyName == key.modifier) && e.preventDefault());
-            }));
-        };
-        window.addEventListener("keydown", this.#events.onKeyDown);
-        this.#events.onKeyUp = e => {
-            let key = this.#heldKeys[Key.fromEvent(e, this.time, this.mouse).code];
-            if (key) {
-                delete this.#heldKeys[key.code];
-                if (!this.heldKeys().length) {
-                    this.#keyCollectors.forEach(obj => {
-                        obj.done = true;
-                        obj.onFinish(obj.collector);
-                    });
-                    this.#keyCollectors = [];
-                }
-            }
-        };
-        window.addEventListener("keyup", this.#events.onKeyUp);
-        // Mouse
-        this.#events.onMouseDown = e => {
-            if (this.mouseElement.contains(e.activeTarget)) {
-                this.#events.onKeyDown(e);
-                if (e.defaultPrevented && (e.button == 3 || e.button == 4)) {
-                    if (history.state && history.state.trapped) {
-                        this.#events.popStateActive = Time.ms;
-                        history.back();
-                    }
-                    history.pushState({trapped: true}, "", location.href);
-                }
-            }
-        };
-        window.addEventListener("mousedown", this.#events.onMouseDown);
-        this.#events.onMouseUp = e => {
-            let key = Key.fromEvent(e, this.time, this.mouse);
-            let preventNavigation = this.#keyCollectors.length;
-            Object.values(this.definedControls).filter(control => control).forEach(control => (control instanceof Array ? control : [control]).forEach(requiredKey => {
-                preventNavigation = preventNavigation || requiredKey == key.code || requiredKey == key.modifier;
-                (requiredKey && requiredKey.required || []).forEach(requiredKeyName => preventNavigation = preventNavigation || requiredKeyName == key.code || requiredKeyName == key.modifier);
-            }));
-            preventNavigation && (this.#events.popStateActive = Time.ms);
-            this.#events.onKeyUp(e);
-        }
-        this.#events.popStateActive = -Infinity;
-        this.#events.onPopState = () => {
-            if (this.#events.popStateActive + 100 > Time.ms) {
-                history.pushState({trapped: true}, "", location.href);
-            }
-        };
-        window.addEventListener("popstate", this.#events.onPopState);
-
-
-        window.addEventListener("mouseup", this.#events.onMouseUp);
-        this.#events.onContextMenu = e => this.mouseElement.contains(e.activeTarget) && e.preventDefault();
-        window.addEventListener("contextmenu", this.#events.onContextMenu);
-        this.#events.onMouseMove = e => this.mouseElement.contains(e.activeTarget) && this.#mouseActions.onMove(e);
-        window.addEventListener("mousemove", this.#events.onMouseMove);
-        this.#events.onWheel = e => this.mouseElement.contains(e.activeTarget) && this.#mouseActions.onScroll(e);
-        window.addEventListener("wheel", this.#events.onWheel);
-        // Touch
-        this.#events.onTouchStart = e => {
-            if (this.mouseElement.contains(e.activeTarget)) {
-                this.#events.onTouchMove(e);
-                if (e.touches.length == 1) {
-                    this.#events.onKeyDown(new MouseEvent("mousedown", {button: 0}));
-                } else {
-                    this.#events.onKeyUp(new MouseEvent("mouseup", {button: 0}));
-                    this.#events.onKeyDown(new MouseEvent("mousedown", {button: 2}));
-                }
-            }
-        };
-        window.addEventListener("touchstart", this.#events.onTouchStart);
-        this.#events.onTouchEnd = e => {
-            if (e.touches.length < 2) {
-                if (e.touches.length == 0) {
-                    this.#events.onKeyUp(new MouseEvent("mouseup", {button: 0}));
-                } else {
-                    this.#events.onKeyDown(new MouseEvent("mousedown", {button: 0}));
-                }
-                this.#events.onKeyUp(new MouseEvent("mouseup", {button: 2}));
-            }
-        };
-        window.addEventListener("touchend", this.#events.onTouchEnd);
-        this.#events.onTouchMove = e => {
-            if (this.mouseElement.contains(e.activeTarget)) {
-                let clientX = 0;
-                let clientY = 0;
-                for (let i = 0; i < e.touches.length; i++) {
-                    clientX += e.touches[i].clientX / e.touches.length;
-                    clientY += e.touches[i].clientY / e.touches.length;
-                }
-                this.#events.onMouseMove(new MouseEvent("mousemove", {clientX, clientY, movementX: e.type == "touchmove" ? clientX - this.mouse.pos.x : 0, movementY: e.type == "touchmove" ? clientY - this.mouse.pos.y * (this.yUp ? -1 : 1) : 0}));
-            }
-        };
-        window.addEventListener("touchmove", this.#events.onTouchMove);
-        // Window
-        this.#events.onBlur = () => this.#heldKeys = {};
-        window.addEventListener("blur", this.#events.onBlur);
-        this.#events.onPointerLockChange = () => this.#heldKeys = document.pointerLockElement ? this.#heldKeys : {};
-        document.addEventListener("pointerlockchange", this.#events.onPointerLockChange);
-        this.#events.onBeforeUnload = () => this.confirmExit ? true : undefined;
-        window.addEventListener("beforeunload", this.#events.onBeforeUnload);
-    }
-
     remove() {
         // Keyboard
         window.removeEventListener("keydown", this.#events.onKeyDown);
@@ -365,21 +362,21 @@ globalThis.Controls = class Controls {
     }
 };
 
-globalThis.Key = class Key {
+Controls.Key = class Key {
     static fromCode(code, time, mouse) {
         if (code.indexOf("Mouse") > -1) {
-            return new MouseButton(code, time, mouse);
+            return new Controls.MouseButton(code, time, mouse);
         } else {
-            return new KeyboardKey(code, time, mouse);
+            return new Controls.KeyboardKey(code, time, mouse);
         }
     }
     static fromEvent(event, time, mouse) {
         if (!event.type.indexOf("key")) {
-            return new KeyboardKey(event, time, mouse);
+            return new Controls.KeyboardKey(event, time, mouse);
         } else if (!event.type.indexOf("mouse")) {
-            return new MouseButton(event, time, mouse);
+            return new Controls.MouseButton(event, time, mouse);
         }
-        return new Key(undefined, time, mouse);
+        return new Controls.Key(undefined, time, mouse);
     }
 
     #device;
@@ -417,7 +414,7 @@ globalThis.Key = class Key {
         this.#mouse = mouse?.snapshot;
     }
 };
-globalThis.KeyboardKey = class KeyboardKey extends globalThis.Key {
+Controls.KeyboardKey = class KeyboardKey extends Controls.Key {
     static userLayoutMap;
     static layoutMap(code, userLayout = true) {
         let defaultLayoutMap = {
@@ -499,7 +496,7 @@ globalThis.KeyboardKey = class KeyboardKey extends globalThis.Key {
         let translated = ["Escape", "Enter", "Tab", "Space", "Backspace", "Delete", "Caps Lock", "Scroll Lock", "Num Lock", "Home", "End", "Page Up", "Page Down", "Insert", "Pause", "Print Screen"];
         if (typeof code == "string") {
             this.#code = code;
-            this.#name = KeyboardKey.layoutMap(code) || code;
+            this.#name = Controls.KeyboardKey.layoutMap(code) || code;
             this.#tName = translated.indexOf(code) > -1 ? `key.keyboard.${Translations.toKey(code)}` : !code.indexOf("Numpad ") && code.length == 8 ? `key.keyboard.numpad[number:"${code[7]}"]` : undefined;
             this.#modifierCode = ["Shift", "Control", "Alt", "Meta"].find(modifier => code.indexOf(modifier) > -1);
             if (this.#modifierCode) {
@@ -558,9 +555,9 @@ globalThis.KeyboardKey = class KeyboardKey extends globalThis.Key {
             } else if (!code.indexOf("Meta") || !code.indexOf("OS")) {
                 this.#modifierCode = "Meta";
                 this.#modifierName = /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent) ? "Command" : /Windows/i.test(navigator.userAgent) ? "Windows" : "Super";
-            } else if (KeyboardKey.layoutMap(code)) {
-                this.#code = KeyboardKey.layoutMap(code, false);
-                this.#name = KeyboardKey.layoutMap(code);
+            } else if (Controls.KeyboardKey.layoutMap(code)) {
+                this.#code = Controls.KeyboardKey.layoutMap(code, false);
+                this.#name = Controls.KeyboardKey.layoutMap(code);
                 this.#tName = undefined;
             } else {
                 this.#code = this.#name = code.replace(/(?!^)([A-Z])/g, " $1");
@@ -577,7 +574,7 @@ globalThis.KeyboardKey = class KeyboardKey extends globalThis.Key {
         }
     }
 };
-globalThis.MouseButton = class MouseButton extends globalThis.Key {
+Controls.MouseButton = class MouseButton extends Controls.Key {
     #code = "Unknown Mouse Tile";
     get code() {
         return this.#code;
@@ -630,7 +627,7 @@ globalThis.MouseButton = class MouseButton extends globalThis.Key {
     }
 };
 
-globalThis.Mouse = class Mouse {
+Controls.Mouse = class Mouse {
     #pos;
     get pos() {
         return this.#pos.copy;
@@ -657,7 +654,7 @@ globalThis.Mouse = class Mouse {
     }
 
     get snapshot() {
-        return new MouseSnapshot(this);
+        return new Controls.Mouse.Snapshot(this);
     }
 
     constructor(pos = new Pos2(), captured = false, actions = {}, yUp = false) {
@@ -680,38 +677,39 @@ globalThis.Mouse = class Mouse {
             this.#captured = captured;
         };
     }
-};
-globalThis.MouseSnapshot = class MouseSnapshot {
-    #pos;
-    get pos() {
-        return this.#pos.copy;
-    }
 
-    #move;
-    get move() {
-        return this.#move.copy;
-    }
+    static Snapshot = class MouseSnapshot {
+        #pos;
+        get pos() {
+            return this.#pos.copy;
+        }
 
-    #wheel;
-    get wheel() {
-        return this.#wheel.copy;
-    }
+        #move;
+        get move() {
+            return this.#move.copy;
+        }
 
-    #captured;
-    get captured() {
-        return this.#captured;
-    }
+        #wheel;
+        get wheel() {
+            return this.#wheel.copy;
+        }
 
-    #yUp;
-    get yUp() {
-        return this.#yUp;
-    }
+        #captured;
+        get captured() {
+            return this.#captured;
+        }
 
-    constructor(mouse = new Mouse()) {
-        this.#pos = mouse.pos.copy;
-        this.#move = mouse.move.copy;
-        this.#wheel = mouse.wheel.copy;
-        this.#captured = mouse.captured;
-        this.#yUp = mouse.yUp;
+        #yUp;
+        get yUp() {
+            return this.#yUp;
+        }
+
+        constructor(mouse = new Controls.Mouse()) {
+            this.#pos = mouse.pos.copy;
+            this.#move = mouse.move.copy;
+            this.#wheel = mouse.wheel.copy;
+            this.#captured = mouse.captured;
+            this.#yUp = mouse.yUp;
+        }
     }
 };
