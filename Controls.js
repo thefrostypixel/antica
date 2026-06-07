@@ -346,19 +346,19 @@ globalThis.Controls = class Controls {
         window.removeEventListener("keyup", this.#events.onKeyUp);
         // Mouse
         window.removeEventListener("mousedown", this.#events.onMouseDown);
-        window.removeEventListener("mouseup", this.#events.onKeyUp);
+        window.removeEventListener("mouseup", this.#events.onMouseUp);
         window.removeEventListener("popstate", this.#events.onPopState);
         window.removeEventListener("contextmenu", this.#events.onContextMenu);
         window.removeEventListener("mousemove", this.#events.onMouseMove);
-        window.removeEventListener("onwheel", this.#events.onWheel);
+        window.removeEventListener("wheel", this.#events.onWheel);
         // Touch
-        window.removeEventListener("ontouchstart", this.#events.onTouchStart);
-        window.removeEventListener("ontouchend", this.#events.onTouchEnd);
-        window.removeEventListener("ontouchmove", this.#events.onTouchMove);
+        window.removeEventListener("touchstart", this.#events.onTouchStart);
+        window.removeEventListener("touchend", this.#events.onTouchEnd);
+        window.removeEventListener("touchmove", this.#events.onTouchMove);
         // Window
-        window.removeEventListener("onblur", this.#events.onBlur);
-        document.removeEventListener("onpointerlockchange", this.#events.onPointerLockChange);
-        window.removeEventListener("onbeforeunload", this.#events.onBeforeUnload);
+        window.removeEventListener("blur", this.#events.onBlur);
+        document.removeEventListener("pointerlockchange", this.#events.onPointerLockChange);
+        window.removeEventListener("beforeunload", this.#events.onBeforeUnload);
     }
 };
 
