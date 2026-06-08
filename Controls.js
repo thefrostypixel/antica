@@ -28,7 +28,7 @@ globalThis.Controls = class Controls {
         return this.controlToString(control, code => Controls.Key.fromCode(code).tName ? `<a t="${Controls.Key.fromCode(code).tName.replaceAll("&", "&amp;").replaceAll("\"", "&quot;")}"></a>` : `<a>${Controls.Key.fromCode(code).name.replaceAll("&", "&amp;").replaceAll("<", "&lt;")}</a>`);
     }
 
-    #events = {};
+    #listeners = {};
     constructor(time = undefined, definedControls = {}, mouseElement = document, yUp = false, confirmExit = false) {
         this.time = time;
         this.definedControls = definedControls;
@@ -36,7 +36,7 @@ globalThis.Controls = class Controls {
         this.#mouse = new Controls.Mouse(undefined, undefined, this.#mouseActions, this.#yUp = !!yUp);
         this.confirmExit = confirmExit;
         // Keyboard
-        this.#events.onKeyDown = e => {
+        this.#listeners.onKeyDown = e => {
             let key = Controls.Key.fromEvent(e, this.time, this.mouse);
             if (!this.#heldKeys[key.code]) {
                 this.#heldKeys[key.code] = key;
@@ -63,8 +63,8 @@ globalThis.Controls = class Controls {
                 (requiredKey && requiredKey.required || []).forEach(requiredKeyName => (requiredKeyName == key.code || requiredKeyName == key.modifier) && e.preventDefault());
             }));
         };
-        window.addEventListener("keydown", this.#events.onKeyDown);
-        this.#events.onKeyUp = e => {
+        addEventListener("keydown", this.#listeners.onKeyDown);
+        this.#listeners.onKeyUp = e => {
             let key = this.#heldKeys[Controls.Key.fromEvent(e, this.time, this.mouse).code];
             if (key) {
                 delete this.#heldKeys[key.code];
@@ -77,88 +77,88 @@ globalThis.Controls = class Controls {
                 }
             }
         };
-        window.addEventListener("keyup", this.#events.onKeyUp);
+        addEventListener("keyup", this.#listeners.onKeyUp);
         // Mouse
-        this.#events.onMouseDown = e => {
-            if (this.mouseElement.contains(e.activeTarget)) {
-                this.#events.onKeyDown(e);
+        this.#listeners.onMouseDown = e => {
+            if (this.mouseElement.contains(e.target)) {
+                this.#listeners.onKeyDown(e);
                 if (e.defaultPrevented && (e.button == 3 || e.button == 4)) {
                     if (history.state && history.state.trapped) {
-                        this.#events.popStateActive = Time.ms;
+                        this.#listeners.popStateActive = Time.ms;
                         history.back();
                     }
                     history.pushState({trapped: true}, "", location.href);
                 }
             }
         };
-        window.addEventListener("mousedown", this.#events.onMouseDown);
-        this.#events.onMouseUp = e => {
+        addEventListener("mousedown", this.#listeners.onMouseDown);
+        this.#listeners.onMouseUp = e => {
             let key = Controls.Key.fromEvent(e, this.time, this.mouse);
             let preventNavigation = this.#keyCollectors.length;
             Object.values(this.definedControls).filter(control => control).forEach(control => (control instanceof Array ? control : [control]).forEach(requiredKey => {
                 preventNavigation = preventNavigation || requiredKey == key.code || requiredKey == key.modifier;
                 (requiredKey && requiredKey.required || []).forEach(requiredKeyName => preventNavigation = preventNavigation || requiredKeyName == key.code || requiredKeyName == key.modifier);
             }));
-            preventNavigation && (this.#events.popStateActive = Time.ms);
-            this.#events.onKeyUp(e);
+            preventNavigation && (this.#listeners.popStateActive = Time.ms);
+            this.#listeners.onKeyUp(e);
         };
-        this.#events.popStateActive = -Infinity;
-        this.#events.onPopState = () => {
-            if (this.#events.popStateActive + 100 > Time.ms) {
+        this.#listeners.popStateActive = -Infinity;
+        this.#listeners.onPopState = () => {
+            if (this.#listeners.popStateActive + 100 > Time.ms) {
                 history.pushState({trapped: true}, "", location.href);
             }
         };
-        window.addEventListener("popstate", this.#events.onPopState);
-        window.addEventListener("mouseup", this.#events.onMouseUp);
-        this.#events.onContextMenu = e => this.mouseElement.contains(e.activeTarget) && e.preventDefault();
-        window.addEventListener("contextmenu", this.#events.onContextMenu);
-        this.#events.onMouseMove = e => this.mouseElement.contains(e.activeTarget) && this.#mouseActions.onMove(e);
-        window.addEventListener("mousemove", this.#events.onMouseMove);
-        this.#events.onWheel = e => this.mouseElement.contains(e.activeTarget) && this.#mouseActions.onScroll(e);
-        window.addEventListener("wheel", this.#events.onWheel);
+        addEventListener("popstate", this.#listeners.onPopState);
+        addEventListener("mouseup", this.#listeners.onMouseUp);
+        this.#listeners.onContextMenu = e => this.mouseElement.contains(e.target) && e.preventDefault();
+        addEventListener("contextmenu", this.#listeners.onContextMenu);
+        this.#listeners.onMouseMove = e => this.mouseElement.contains(e.target) && this.#mouseActions.onMove(e);
+        addEventListener("mousemove", this.#listeners.onMouseMove);
+        this.#listeners.onWheel = e => this.mouseElement.contains(e.target) && this.#mouseActions.onScroll(e);
+        addEventListener("wheel", this.#listeners.onWheel);
         // Touch
-        this.#events.onTouchStart = e => {
-            if (this.mouseElement.contains(e.activeTarget)) {
-                this.#events.onTouchMove(e);
+        this.#listeners.onTouchStart = e => {
+            if (this.mouseElement.contains(e.target)) {
+                this.#listeners.onTouchMove(e);
                 if (e.touches.length == 1) {
-                    this.#events.onKeyDown(new MouseEvent("mousedown", {button: 0}));
+                    this.#listeners.onKeyDown(new MouseEvent("mousedown", {button: 0}));
                 } else {
-                    this.#events.onKeyUp(new MouseEvent("mouseup", {button: 0}));
-                    this.#events.onKeyDown(new MouseEvent("mousedown", {button: 2}));
+                    this.#listeners.onKeyUp(new MouseEvent("mouseup", {button: 0}));
+                    this.#listeners.onKeyDown(new MouseEvent("mousedown", {button: 2}));
                 }
             }
         };
-        window.addEventListener("touchstart", this.#events.onTouchStart);
-        this.#events.onTouchEnd = e => {
+        addEventListener("touchstart", this.#listeners.onTouchStart);
+        this.#listeners.onTouchEnd = e => {
             if (e.touches.length < 2) {
                 if (e.touches.length == 0) {
-                    this.#events.onKeyUp(new MouseEvent("mouseup", {button: 0}));
+                    this.#listeners.onKeyUp(new MouseEvent("mouseup", {button: 0}));
                 } else {
-                    this.#events.onKeyDown(new MouseEvent("mousedown", {button: 0}));
+                    this.#listeners.onKeyDown(new MouseEvent("mousedown", {button: 0}));
                 }
-                this.#events.onKeyUp(new MouseEvent("mouseup", {button: 2}));
+                this.#listeners.onKeyUp(new MouseEvent("mouseup", {button: 2}));
             }
         };
-        window.addEventListener("touchend", this.#events.onTouchEnd);
-        this.#events.onTouchMove = e => {
-            if (this.mouseElement.contains(e.activeTarget)) {
+        addEventListener("touchend", this.#listeners.onTouchEnd);
+        this.#listeners.onTouchMove = e => {
+            if (this.mouseElement.contains(e.target)) {
                 let clientX = 0;
                 let clientY = 0;
                 for (let i = 0; i < e.touches.length; i++) {
                     clientX += e.touches[i].clientX / e.touches.length;
                     clientY += e.touches[i].clientY / e.touches.length;
                 }
-                this.#events.onMouseMove(new MouseEvent("mousemove", {clientX, clientY, movementX: e.type == "touchmove" ? clientX - this.mouse.pos.x : 0, movementY: e.type == "touchmove" ? clientY - this.mouse.pos.y * (this.yUp ? -1 : 1) : 0}));
+                this.#listeners.onMouseMove(new MouseEvent("mousemove", {clientX, clientY, movementX: e.type == "touchmove" ? clientX - this.mouse.pos.x : 0, movementY: e.type == "touchmove" ? clientY - this.mouse.pos.y * (this.yUp ? -1 : 1) : 0}));
             }
         };
-        window.addEventListener("touchmove", this.#events.onTouchMove);
+        addEventListener("touchmove", this.#listeners.onTouchMove);
         // Window
-        this.#events.onBlur = () => this.#heldKeys = {};
-        window.addEventListener("blur", this.#events.onBlur);
-        this.#events.onPointerLockChange = () => this.#heldKeys = document.pointerLockElement ? this.#heldKeys : {};
-        document.addEventListener("pointerlockchange", this.#events.onPointerLockChange);
-        this.#events.onBeforeUnload = () => this.confirmExit ? true : undefined;
-        window.addEventListener("beforeunload", this.#events.onBeforeUnload);
+        this.#listeners.onBlur = () => this.#heldKeys = {};
+        addEventListener("blur", this.#listeners.onBlur);
+        this.#listeners.onPointerLockChange = () => this.#heldKeys = document.pointerLockElement ? this.#heldKeys : {};
+        document.addEventListener("pointerlockchange", this.#listeners.onPointerLockChange);
+        this.#listeners.onBeforeUnload = () => this.confirmExit ? true : undefined;
+        addEventListener("beforeunload", this.#listeners.onBeforeUnload);
     }
 
     #KeyCollector = class KeyCollector {
@@ -340,26 +340,26 @@ globalThis.Controls = class Controls {
         this.#confirmExit = !!confirmExit;
     }
 
-    remove() {
+    remove = () => {
         // Keyboard
-        window.removeEventListener("keydown", this.#events.onKeyDown);
-        window.removeEventListener("keyup", this.#events.onKeyUp);
+        removeEventListener("keydown", this.#listeners.onKeyDown);
+        removeEventListener("keyup", this.#listeners.onKeyUp);
         // Mouse
-        window.removeEventListener("mousedown", this.#events.onMouseDown);
-        window.removeEventListener("mouseup", this.#events.onMouseUp);
-        window.removeEventListener("popstate", this.#events.onPopState);
-        window.removeEventListener("contextmenu", this.#events.onContextMenu);
-        window.removeEventListener("mousemove", this.#events.onMouseMove);
-        window.removeEventListener("wheel", this.#events.onWheel);
+        removeEventListener("mousedown", this.#listeners.onMouseDown);
+        removeEventListener("mouseup", this.#listeners.onMouseUp);
+        removeEventListener("popstate", this.#listeners.onPopState);
+        removeEventListener("contextmenu", this.#listeners.onContextMenu);
+        removeEventListener("mousemove", this.#listeners.onMouseMove);
+        removeEventListener("wheel", this.#listeners.onWheel);
         // Touch
-        window.removeEventListener("touchstart", this.#events.onTouchStart);
-        window.removeEventListener("touchend", this.#events.onTouchEnd);
-        window.removeEventListener("touchmove", this.#events.onTouchMove);
+        removeEventListener("touchstart", this.#listeners.onTouchStart);
+        removeEventListener("touchend", this.#listeners.onTouchEnd);
+        removeEventListener("touchmove", this.#listeners.onTouchMove);
         // Window
-        window.removeEventListener("blur", this.#events.onBlur);
-        document.removeEventListener("pointerlockchange", this.#events.onPointerLockChange);
-        window.removeEventListener("beforeunload", this.#events.onBeforeUnload);
-    }
+        removeEventListener("blur", this.#listeners.onBlur);
+        document.removeEventListener("pointerlockchange", this.#listeners.onPointerLockChange);
+        removeEventListener("beforeunload", this.#listeners.onBeforeUnload);
+    };
 };
 
 Controls.Key = class Key {
