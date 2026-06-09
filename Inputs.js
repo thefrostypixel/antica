@@ -228,16 +228,19 @@ globalThis.Inputs = class Inputs {
     };
 
     #lastEvent;
-    #dragging = false;
+    #grabbed;
+    #dragging;
     #scrollAxis = "";
     #lastScroll = 0;
     onEventAvailable;
     get eventAvailable() {
         if (this.#lastEvent?.type == "grab") {
-            this.#dragging = this.#lastEvent.captured;
+            this.#grabbed = this.#dragging = this.#lastEvent.grabbed;
             this.#scrollAxis = "";
+        } else if (this.#lastEvent?.type == "drag") {
+            this.#grabbed = this.#lastEvent.grabbed;
         }
-        while ((this.#events[0]?.type == "move" || this.#events[0]?.type == "release" || this.#events[0]?.type == "abort") && !this.#dragging) {
+        while ((this.#events[0]?.type == "move" || this.#events[0]?.type == "release" || this.#events[0]?.type == "abort") && !this.#grabbed) {
             this.#events.shift();
         }
         return this.#events.length;
@@ -246,9 +249,9 @@ globalThis.Inputs = class Inputs {
         if (this.eventAvailable) {
             let event = this.#events.shift();
             if (event.type == "move" || event.type == "move/scroll") {
-                if (this.#dragging) {
+                if (this.#grabbed) {
                     event = new Inputs.Event.Drag(event.pos, event.lastPos, event.startPos);
-                } else {
+                } else if (!this.#dragging) {
                     event.type = "scroll";
                     event.delta = event.pos.sub(event.lastPos);
                 }
@@ -399,16 +402,31 @@ Inputs.Event.Grab = class GrabInputEvent extends Inputs.Event {
         return this.#pos.copy;
     }
 
+    #grabbed;
+    get grabbed() {
+        return this.#grabbed;
+    }
+    set grabbed(grabbed) {
+        this.#grabbed = grabbed;
+    }
+    grab = grabbed => {
+        this.#grabbed = grabbed;
+    };
+    release = () => {
+        this.#grabbed = undefined;
+    };
+
     get copy() {
         return new Inputs.Event.Grab(this.#pos);
     }
 };
 Inputs.Event.Drag = class DragInputEvent extends Inputs.Event {
-    constructor(pos, lastPos, startPos) {
+    constructor(pos, lastPos, startPos, grabbed) {
         super("drag");
         this.#pos = pos;
         this.#lastPos = lastPos;
         this.#startPos = startPos;
+        this.#grabbed = grabbed;
     }
 
     #pos;
@@ -432,15 +450,24 @@ Inputs.Event.Drag = class DragInputEvent extends Inputs.Event {
         return this.pos.sub(this.#startPos);
     }
 
+    #grabbed;
+    get grabbed() {
+        return this.#grabbed;
+    }
+    release = () => {
+        this.#grabbed = undefined;
+    };
+
     get copy() {
-        return new Inputs.Event.Drag(this.#pos, this.#lastPos, this.#startPos);
+        return new Inputs.Event.Drag(this.#pos, this.#lastPos, this.#startPos, this.#grabbed);
     }
 };
 Inputs.Event.Release = class ReleaseInputEvent extends Inputs.Event {
-    constructor(pos, startPos) {
+    constructor(pos, startPos, grabbed) {
         super("release");
         this.#pos = pos;
         this.#startPos = startPos;
+        this.#grabbed = grabbed;
     }
 
     #pos;
@@ -456,17 +483,28 @@ Inputs.Event.Release = class ReleaseInputEvent extends Inputs.Event {
         return this.pos.sub(this.#startPos);
     }
 
-    get copy() {
-        return new Inputs.Event.Release(this.#pos, this.#startPos);
-    }
-};
-Inputs.Event.Abort = class AbortInputEvent extends Inputs.Event {
-    constructor() {
-        super("abort");
+    #grabbed;
+    get grabbed() {
+        return this.#grabbed;
     }
 
     get copy() {
-        return new Inputs.Event.Abort();
+        return new Inputs.Event.Release(this.#pos, this.#startPos, this.#grabbed);
+    }
+};
+Inputs.Event.Abort = class AbortInputEvent extends Inputs.Event {
+    constructor(grabbed) {
+        super("abort");
+        this.#grabbed = grabbed;
+    }
+
+    #grabbed;
+    get grabbed() {
+        return this.#grabbed;
+    }
+
+    get copy() {
+        return new Inputs.Event.Abort(this.#grabbed);
     }
 };
 Inputs.Event.Scroll = class ScrollInputEvent extends Inputs.Event {
