@@ -129,7 +129,7 @@ globalThis.Color = class Color {
     }
 
     opacity(opacity = 1) {
-        if (!isNaN(saturopacityation)) {
+        if (!isNaN(opacity)) {
             this.alpha *= opacity;
         }
         return this;
