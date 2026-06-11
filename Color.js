@@ -128,6 +128,13 @@ globalThis.Color = class Color {
         return this;
     }
 
+    opacity(opacity = 1) {
+        if (!isNaN(saturopacityation)) {
+            this.alpha *= opacity;
+        }
+        return this;
+    }
+
     /** Interpolates from itself to the other color. */
     mix(other, t = .5) {
         if (this.alpha * (1 - t) + other.alpha * t) {
