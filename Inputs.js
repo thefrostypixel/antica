@@ -529,7 +529,8 @@ Inputs.Event.Scroll = class ScrollInputEvent extends Inputs.Event.Positioned {
         return new Inputs.Event.Scroll(this.pos.copy, this.unlocked.copy, this.axis);
     }
 };
-Inputs.Event.Left = class LeftInputEvent extends Inputs.Event {
+Inputs.Event.Directional = class DirectionalInputEvent extends Inputs.Event {};
+Inputs.Event.Left = class LeftInputEvent extends Inputs.Event.Directional {
     constructor() {
         super("left");
     }
@@ -538,7 +539,7 @@ Inputs.Event.Left = class LeftInputEvent extends Inputs.Event {
         return new Inputs.Event.Left();
     }
 };
-Inputs.Event.Right = class RightInputEvent extends Inputs.Event {
+Inputs.Event.Right = class RightInputEvent extends Inputs.Event.Directional {
     constructor() {
         super("right");
     }
@@ -547,7 +548,7 @@ Inputs.Event.Right = class RightInputEvent extends Inputs.Event {
         return new Inputs.Event.Right();
     }
 };
-Inputs.Event.Up = class UpInputEvent extends Inputs.Event {
+Inputs.Event.Up = class UpInputEvent extends Inputs.Event.Directional {
     constructor() {
         super("up");
     }
@@ -556,7 +557,7 @@ Inputs.Event.Up = class UpInputEvent extends Inputs.Event {
         return new Inputs.Event.Up();
     }
 };
-Inputs.Event.Down = class DownInputEvent extends Inputs.Event {
+Inputs.Event.Down = class DownInputEvent extends Inputs.Event.Directional {
     constructor() {
         super("down");
     }
