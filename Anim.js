@@ -352,6 +352,7 @@ globalThis.Anim = class Anim {
                         let drift = Object.fromEntries(Object.keys(axes).map(axis => [axis, normalVel[axis] - dot * normalApproach[axis]]));
                         driftVel = Object.keys(axes).reduce((driftMag, axis) => driftMag + drift[axis] ** 2, 0) ** .5;
                         normalDrift = Object.fromEntries(Object.keys(axes).map(axis => [axis, drift[axis] / driftVel]));
+                        driftVel *= totalVel;
                     }
                 }
             } else if (totalVel > 1e-9) {
