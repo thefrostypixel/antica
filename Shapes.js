@@ -301,7 +301,7 @@ globalThis.Box2 = class Box2 {
     }
     expand(...v) {
         if (v.length == 4 || v[0] instanceof Padding2) {
-            v[0] = v[0] instanceof Padding2 ? v[0] : new Padding2(...v);
+            v = v[0] instanceof Padding2 ? v[0] : new Padding2(...v);
             this.xMin -= v.xMinus;
             this.xMax += v.xPlus;
             this.yMin -= v.yMinus;
@@ -803,7 +803,7 @@ globalThis.Box3 = class Box3 {
     }
     expand(...v) {
         if (v.length == 4 || v[0] instanceof Padding2) {
-            v[0] = v[0] instanceof Padding2 ? v[0] : new Padding2(...v);
+            v = v[0] instanceof Padding2 ? v[0] : new Padding2(...v);
             this.xMin -= v.xMinus;
             this.xMax += v.xPlus;
             this.yMin -= v.yMinus;
