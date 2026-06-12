@@ -336,21 +336,21 @@ globalThis.Box2 = class Box2 {
     }
     floor() {
         this.xMin = Math.ceil(this.xMin);
-        this.xMax = Math.floor(this.xMin);
+        this.xMax = Math.floor(this.xMax);
         this.yMin = Math.ceil(this.yMin);
         this.yMax = Math.floor(this.yMax);
         return this;
     }
     ceil() {
         this.xMin = Math.floor(this.xMin);
-        this.xMax = Math.ceil(this.xMin);
+        this.xMax = Math.ceil(this.xMax);
         this.yMin = Math.floor(this.yMin);
         this.yMax = Math.ceil(this.yMax);
         return this;
     }
     round() {
         this.xMin = Math.round(this.xMin);
-        this.xMax = Math.round(this.xMin);
+        this.xMax = Math.round(this.xMax);
         this.yMin = Math.round(this.yMin);
         this.yMax = Math.round(this.yMax);
         return this;
@@ -844,7 +844,7 @@ globalThis.Box3 = class Box3 {
     }
     floor() {
         this.xMin = Math.ceil(this.xMin);
-        this.xMax = Math.floor(this.xMin);
+        this.xMax = Math.floor(this.xMax);
         this.yMin = Math.ceil(this.yMin);
         this.yMax = Math.floor(this.yMax);
         this.zMin = Math.ceil(this.zMin);
@@ -853,7 +853,7 @@ globalThis.Box3 = class Box3 {
     }
     ceil() {
         this.xMin = Math.floor(this.xMin);
-        this.xMax = Math.ceil(this.xMin);
+        this.xMax = Math.ceil(this.xMax);
         this.yMin = Math.floor(this.yMin);
         this.yMax = Math.ceil(this.yMax);
         this.zMin = Math.floor(this.zMin);
@@ -862,7 +862,7 @@ globalThis.Box3 = class Box3 {
     }
     round() {
         this.xMin = Math.round(this.xMin);
-        this.xMax = Math.round(this.xMin);
+        this.xMax = Math.round(this.xMax);
         this.yMin = Math.round(this.yMin);
         this.yMax = Math.round(this.yMax);
         this.zMin = Math.round(this.zMin);
