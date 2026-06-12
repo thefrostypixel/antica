@@ -14,13 +14,13 @@ globalThis.Inputs = class Inputs {
 
         addEventListener("keydown", this.#listeners.onKeyDown = e => {
             if (e.code == "ArrowLeft") {
-                this.#addEvent(new Inputs.Event.Left());
+                this.#addEvent(new Inputs.Event.Left(this.yUp));
             } else if (e.code == "ArrowRight") {
-                this.#addEvent(new Inputs.Event.Right());
+                this.#addEvent(new Inputs.Event.Right(this.yUp));
             } else if (e.code == "ArrowUp") {
-                this.#addEvent(new Inputs.Event.Up());
+                this.#addEvent(new Inputs.Event.Up(this.yUp));
             } else if (e.code == "ArrowDown") {
-                this.#addEvent(new Inputs.Event.Down());
+                this.#addEvent(new Inputs.Event.Down(this.yUp));
             } else if (e.code == "Escape") {
                 if (this.#moved) {
                     this.#addEvent(new Inputs.Event.Abort());
@@ -529,41 +529,72 @@ Inputs.Event.Scroll = class ScrollInputEvent extends Inputs.Event.Positioned {
         return new Inputs.Event.Scroll(this.pos.copy, this.unlocked.copy, this.axis);
     }
 };
-Inputs.Event.Directional = class DirectionalInputEvent extends Inputs.Event {};
+Inputs.Event.Directional = class DirectionalInputEvent extends Inputs.Event {
+    constructor(type, axis, dir, yUp) {
+        super(type);
+        this.axis = axis;
+        this.dir = dir;
+        this.yUp = yUp;
+    }
+
+    #axis;
+    get axis() {
+        return this.#axis;
+    }
+    set axis(axis) {
+        this.#axis = axis;
+    }
+
+    #dir;
+    get dir() {
+        return this.#dir;
+    }
+    set dir(dir) {
+        this.#dir = dir;
+    }
+
+    #yUp;
+    get yUp() {
+        return this.#yUp;
+    }
+    set yUp(yUp) {
+        this.#yUp = !!yUp;
+    }
+};
 Inputs.Event.Left = class LeftInputEvent extends Inputs.Event.Directional {
-    constructor() {
-        super("left");
+    constructor(yUp) {
+        super("left", "x", new Vec2(-1, 0), yUp);
     }
 
     get copy() {
-        return new Inputs.Event.Left();
+        return new Inputs.Event.Left(this.yUp);
     }
 };
 Inputs.Event.Right = class RightInputEvent extends Inputs.Event.Directional {
-    constructor() {
-        super("right");
+    constructor(yUp) {
+        super("right", "x", new Vec2(1, 0), yUp);
     }
 
     get copy() {
-        return new Inputs.Event.Right();
+        return new Inputs.Event.Right(this.yUp);
     }
 };
 Inputs.Event.Up = class UpInputEvent extends Inputs.Event.Directional {
-    constructor() {
-        super("up");
+    constructor(yUp) {
+        super("up", "y", new Vec2(0, !!yUp), yUp);
     }
 
     get copy() {
-        return new Inputs.Event.Up();
+        return new Inputs.Event.Up(this.yUp);
     }
 };
 Inputs.Event.Down = class DownInputEvent extends Inputs.Event.Directional {
-    constructor() {
-        super("down");
+    constructor(yUp) {
+        super("down", "y", new Vec2(0, -!!yUp), yUp);
     }
 
     get copy() {
-        return new Inputs.Event.Down();
+        return new Inputs.Event.Down(this.yUp);
     }
 };
 Inputs.Event.Escape = class EscapeInputEvent extends Inputs.Event {
