@@ -500,7 +500,7 @@ Inputs.Event.Abort = class AbortInputEvent extends Inputs.Event {
     }
 };
 Inputs.Event.Scroll = class ScrollInputEvent extends Inputs.Event.Positioned {
-    constructor(unlocked, axis) {
+    constructor(pos, unlocked, axis) {
         super("scroll", pos);
         this.unlocked = unlocked;
         this.axis = axis;
