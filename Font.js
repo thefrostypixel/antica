@@ -105,7 +105,7 @@ globalThis.Font = class Font {
     fine = (text = "", pos = new Vec2()) => this.#metrics(text).fine.copy.move(pos);
     coarse = (text = "", pos = new Vec2()) => this.fine(text, pos).ceil();
 
-    colorTexture = (renderer, text = "", pos = new Vec2(), pixelRatio = 1) => this.cache.use(`TextColorTexture\0${renderer.id}\0${text}\0${pos.x}\0${pos.y}\0${this.#cacheKey()}`, () => {
+    colorTexture = (renderer, text = "", pos = new Vec2(), pixelRatio = 1) => this.cache.use(`TextColorTexture\0${renderer.id}\0${text}\0${pos.x}\0${pos.y}\0${pixelRatio}\0${this.#cacheKey()}`, () => {
         Font.#context.clearRect(0, 0, Font.#canvas.width = Math.ceil(pos.x + this.fine(text).xMax) * pixelRatio, Font.#canvas.height = Math.ceil(pos.y + this.fine(text).yMax) * pixelRatio);
         Font.#context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
         Font.#context.font = `${this.weight ?? 400} ${this.size ?? 16}px ${this.family ?? "Helvetica"}`;
@@ -113,7 +113,7 @@ globalThis.Font = class Font {
         Font.#context.fillText(text ?? "", pos.x, pos.y);
         return [renderer.texture(Font.#canvas, Renderer.TextureFormat.sRGBA), texture => texture.delete()];
     });
-    monoTexture = (renderer, text = "", pos = new Vec2(), pixelRatio = 1) => this.cache.use(`TextMonoTexture\0${renderer.id}\0${text}\0${pos.x}\0${pos.y}\0${this.#cacheKey()}`, () => {
+    monoTexture = (renderer, text = "", pos = new Vec2(), pixelRatio = 1) => this.cache.use(`TextMonoTexture\0${renderer.id}\0${text}\0${pos.x}\0${pos.y}\0${pixelRatio}\0${this.#cacheKey()}`, () => {
         Font.#context.clearRect(0, 0, Font.#canvas.width = Math.ceil(pos.x + this.fine(text).xMax) * pixelRatio, Font.#canvas.height = Math.ceil(pos.y + this.fine(text).yMax) * pixelRatio);
         Font.#context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
         Font.#context.font = `${this.weight ?? 400} ${this.size ?? 16}px ${this.family ?? "Helvetica"}`;
@@ -124,7 +124,7 @@ globalThis.Font = class Font {
     draw = (target, text = "", pos = new Vec2(), pixelRatio = 1, blending = Renderer.Blending.overlay) => {
         let offset = new Vec2(Math.floor(pos.x + this.fine(text).xMin), Math.floor(pos.y - this.fine(text).yMax));
         let texture = this.monoTexture(target.renderer, text, pos.copy.sub(offset), pixelRatio);
-        return target.renderer.drawColoredCopy(texture, target, undefined, new Box2(texture).move(offset.scale(pixelRatio)), this.color ?? Color.okLab(.95), blending);
+        return target.renderer.drawColoredCopy(texture, target, undefined, new Box2(texture).move(offset.scale(pixelRatio)).round(), this.color ?? Color.okLab(.95), blending);
     };
 
     break = (text = "", maxWidth = 0) => {
