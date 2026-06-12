@@ -263,7 +263,7 @@ globalThis.Inputs = class Inputs {
                 if (event.delta[this.#scrollAxis]) {
                     this.#lastScroll = event.t;
                 }
-                event = new Inputs.Event.Scroll(event.delta, this.#scrollAxis, event.startPos);
+                event = new Inputs.Event.Scroll(event.startPos, event.delta, this.#scrollAxis);
             }
             this.#lastEvent = event;
             return event;
@@ -337,11 +337,10 @@ Inputs.Event = class InputEvent {
         return this;
     };
 };
-Inputs.Event.Basic = class BasicInputEvent extends Inputs.Event {
-    constructor(type, pos, consecutive) {
+Inputs.Event.Positioned = class PositionedInputEvent extends Inputs.Event {
+    constructor(type, pos) {
         super(type);
         this.pos = pos;
-        this.consecutive = consecutive;
     }
 
     #pos;
@@ -350,6 +349,12 @@ Inputs.Event.Basic = class BasicInputEvent extends Inputs.Event {
     }
     set pos(pos) {
         this.#pos = pos;
+    }
+};
+Inputs.Event.Basic = class BasicInputEvent extends Inputs.Event.Positioned {
+    constructor(type, pos, consecutive) {
+        super(type, pos);
+        this.consecutive = consecutive;
     }
 
     #consecutive;
@@ -363,10 +368,10 @@ Inputs.Event.Basic = class BasicInputEvent extends Inputs.Event {
     }
 
     get primary() {
-        return new Inputs.Event.Primary(this.#pos, this.#consecutive);
+        return new Inputs.Event.Primary(this.pos, this.consecutive);
     }
     get secondary() {
-        return new Inputs.Event.Secondary(this.#pos, this.#consecutive);
+        return new Inputs.Event.Secondary(this.pos, this.consecutive);
     }
 };
 Inputs.Event.Primary = class PrimaryInputEvent extends Inputs.Event.Basic {
@@ -387,18 +392,9 @@ Inputs.Event.Secondary = class SecondaryInputEvent extends Inputs.Event.Basic {
         return new Inputs.Event.Secondary(this.pos.copy, this.consecutive.copy);
     }
 };
-Inputs.Event.Grab = class GrabInputEvent extends Inputs.Event {
+Inputs.Event.Grab = class GrabInputEvent extends Inputs.Event.Positioned {
     constructor(pos) {
-        super("grab");
-        this.pos = pos;
-    }
-
-    #pos;
-    get pos() {
-        return this.#pos;
-    }
-    set pos(pos) {
-        this.#pos = pos;
+        super("grab", pos);
     }
 
     #grabbed;
@@ -419,21 +415,12 @@ Inputs.Event.Grab = class GrabInputEvent extends Inputs.Event {
         return new Inputs.Event.Grab(this.pos.copy);
     }
 };
-Inputs.Event.Drag = class DragInputEvent extends Inputs.Event {
+Inputs.Event.Drag = class DragInputEvent extends Inputs.Event.Positioned {
     constructor(pos, lastPos, startPos, grabbed) {
-        super("drag");
-        this.pos = pos;
+        super("drag", pos);
         this.lastPos = lastPos;
         this.startPos = startPos;
         this.#grabbed = grabbed;
-    }
-
-    #pos;
-    get pos() {
-        return this.#pos;
-    }
-    set pos(pos) {
-        this.#pos = pos;
     }
 
     #lastPos;
@@ -444,7 +431,7 @@ Inputs.Event.Drag = class DragInputEvent extends Inputs.Event {
         this.#lastPos = lastPos;
     }
     get lastDelta() {
-        return this.pos.copy.sub(this.#lastPos);
+        return this.pos.copy.sub(this.lastPos);
     }
 
     #startPos;
@@ -455,7 +442,7 @@ Inputs.Event.Drag = class DragInputEvent extends Inputs.Event {
         this.#startPos = startPos;
     }
     get startDelta() {
-        return this.pos.copy.sub(this.#startPos);
+        return this.pos.copy.sub(this.startPos);
     }
 
     #grabbed;
@@ -470,20 +457,11 @@ Inputs.Event.Drag = class DragInputEvent extends Inputs.Event {
         return new Inputs.Event.Drag(this.pos.copy, this.lastPos.copy, this.startPos.copy, this.grabbed);
     }
 };
-Inputs.Event.Release = class ReleaseInputEvent extends Inputs.Event {
+Inputs.Event.Release = class ReleaseInputEvent extends Inputs.Event.Positioned {
     constructor(pos, startPos, grabbed) {
-        super("release");
-        this.pos = pos;
+        super("release", pos);
         this.startPos = startPos;
         this.#grabbed = grabbed;
-    }
-
-    #pos;
-    get pos() {
-        return this.#pos;
-    }
-    set pos(pos) {
-        this.#pos = pos;
     }
 
     #startPos;
@@ -494,7 +472,7 @@ Inputs.Event.Release = class ReleaseInputEvent extends Inputs.Event {
         this.#startPos = startPos;
     }
     get startDelta() {
-        return this.pos.copy.sub(this.#startPos);
+        return this.pos.copy.sub(this.startPos);
     }
 
     #grabbed;
@@ -503,7 +481,7 @@ Inputs.Event.Release = class ReleaseInputEvent extends Inputs.Event {
     }
 
     get copy() {
-        return new Inputs.Event.Release(this.#pos, this.#startPos, this.#grabbed);
+        return new Inputs.Event.Release(this.pos.copy, this.startPos.copy, this.grabbed);
     }
 };
 Inputs.Event.Abort = class AbortInputEvent extends Inputs.Event {
@@ -518,15 +496,14 @@ Inputs.Event.Abort = class AbortInputEvent extends Inputs.Event {
     }
 
     get copy() {
-        return new Inputs.Event.Abort(this.#grabbed);
+        return new Inputs.Event.Abort(this.grabbed);
     }
 };
-Inputs.Event.Scroll = class ScrollInputEvent extends Inputs.Event {
-    constructor(unlocked, axis, pos) {
-        super("scroll");
+Inputs.Event.Scroll = class ScrollInputEvent extends Inputs.Event.Positioned {
+    constructor(unlocked, axis) {
+        super("scroll", pos);
         this.unlocked = unlocked;
         this.axis = axis;
-        this.pos = pos;
     }
 
     #unlocked;
@@ -548,16 +525,8 @@ Inputs.Event.Scroll = class ScrollInputEvent extends Inputs.Event {
         this.#axis = axis;
     }
 
-    #pos;
-    get pos() {
-        return this.#pos;
-    }
-    set pos(pos) {
-        this.#pos = pos;
-    }
-
     get copy() {
-        return new Inputs.Event.Scroll(this.unlocked.copy, this.axis, this.pos.copy);
+        return new Inputs.Event.Scroll(this.pos.copy, this.unlocked.copy, this.axis);
     }
 };
 Inputs.Event.Left = class LeftInputEvent extends Inputs.Event {
