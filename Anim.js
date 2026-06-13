@@ -277,14 +277,13 @@ globalThis.Anim = class Anim {
             offsets = {"": offsets};
         }
         if (offsets instanceof Object) {
-            let t = this.#t;
-            let axes = this.#snapshot(t);
-            Object.keys(axes).forEach(axis => {
-                axes[axis].target += +offsets[axis];
-                axes[axis].vel += +offsets[axis];
-                axes[axis].value += +offsets[axis];
+            Object.keys(offsets).forEach(axis => {
+                if (axis in this.#axes) {
+                    this.#axes[axis].target += +offsets[axis];
+                    this.#axes[axis].value += +offsets[axis];
+                    this.#axes[axis].functions.forEach(f => f.n0 += +offsets[axis]);
+                }
             });
-            this.#updateFunctions(axes, t);
         }
         return this;
     };
