@@ -117,7 +117,7 @@ globalThis.Anim = class Anim {
         });
     }
     #setAxisProperty(property, values) {
-        if (values instanceof Object) {
+        if (values instanceof Object && Object.keys(values).some(axis => axis in this.#axes && values[axis] != this.#axes[axis].target)) {
             let t = this.#t;
             let axes = this.#snapshot(t);
             Object.keys(values).forEach(axis => {
@@ -278,7 +278,7 @@ globalThis.Anim = class Anim {
         }
         if (offsets instanceof Object) {
             Object.keys(offsets).forEach(axis => {
-                if (axis in this.#axes) {
+                if (axis in this.#axes && !!+offsets[axis]) {
                     this.#axes[axis].target += +offsets[axis];
                     this.#axes[axis].value += +offsets[axis];
                     this.#axes[axis].functions.forEach(f => f.n0 += +offsets[axis]);
