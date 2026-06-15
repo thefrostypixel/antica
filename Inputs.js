@@ -7,6 +7,7 @@ including commercially, and without including this license.
 
 globalThis.Inputs = class Inputs {
     #listeners = {};
+    #fileInput;
     constructor(element = document, yUp = false, confirmExit = false) {
         this.element = element;
         this.#yUp = !!yUp;
@@ -146,6 +147,62 @@ globalThis.Inputs = class Inputs {
                 }
             }
         });
+
+        let parseItems = e => {
+            let items = [];
+            let promises = [];
+            let lastKind = "";
+            for (let entry of (e.dataTransfer || e.clipboardData).items) {
+                let type = entry.type;
+                if (entry.kind == "string") {
+                    let item = items.at(-1);
+                    if (lastKind != entry.kind) {
+                        items.push(item = new Inputs.Item());
+                    }
+                    promises.push(new Promise(resolve => entry.getAsString(content => {
+                        item.add(type, content);
+                        resolve();
+                    })));
+                } else {
+                    let processEntry = async entry => {
+                        entry = entry.webkitGetAsEntry?.() || entry;
+                        if (entry?.isFile) {
+                            return new Promise(resolve => entry.file(async file => {
+                                items.push(new Inputs.Item(entry.fullPath.slice(1)).add(file.type, new Uint8Array(await file.arrayBuffer())));
+                                resolve();
+                            }));
+                        } else if (entry?.isDirectory) {
+                            let promises = [];
+                            let reader = entry.createReader();
+                            let children = [0];
+                            while (children.length) {
+                                (children = await new Promise(resolve => reader.readEntries(resolve))).forEach(child => promises.push(processEntry(child)));
+                            }
+                            await Promise.all(promises);
+                        }
+                    };
+                    promises.push(processEntry(entry));
+                }
+                lastKind = entry.kind;
+            }
+            return Promise.all(promises).then(() => items);
+        };
+        window.addEventListener("dragover", this.#listeners.onDragOver = e => e.preventDefault());
+        window.addEventListener("drop", this.#listeners.onDrop = e => {
+            e.preventDefault();
+            parseItems(e).then(items => this.#addEvent(new Inputs.Event.Drop(new Vec2(e.clientX, yUp ? innerHeight - e.clientY : e.clientY), items)));
+        });
+        document.addEventListener("paste", this.#listeners.onPaste = e => parseItems(e).then(items => this.#addEvent(new Inputs.Event.Insert(items))));
+        this.#fileInput = document.createElement("input");
+        this.#fileInput.type = "file";
+        this.#fileInput.onchange = () => {
+            let items = [];
+            Promise.all(Array.from(this.#fileInput.files).map(async file => {
+                let item = new Inputs.Item(file.webkitRelativePath || file.name);
+                items.push(item);
+                item.add(file.type, new Uint8Array(await file.arrayBuffer()));
+            })).then(() => this.#addEvent(new Inputs.Event.Insert(items)));
+        };
 
         addEventListener("blur", this.#listeners.onBlur = () => {
             if (this.#down == "primary" && this.#moved) {
@@ -290,6 +347,26 @@ globalThis.Inputs = class Inputs {
     set confirmExit(confirmExit) {
         this.#confirmExit = !!confirmExit;
     }
+
+    #showFileInput = (types, multiple, folder) => {
+        this.#fileInput.multiple = multiple;
+        this.#fileInput.webkitdirectory = folder;
+        this.#fileInput.accept = types?.length ? types.join() : undefined;
+        this.#fileInput.click();
+    };
+    requestTextPaste = () => navigator.clipboard?.read().then(entries => {
+        let items = [];
+        let promises = [];
+        entries.forEach(entry => {
+            let item = new Inputs.Item();
+            items.push(item);
+            entry.types.forEach(type => promises.push(entry.getType(type).then(blob => blob.arrayBuffer()).then(arrayBuffer => item.add(type, new Uint8Array(arrayBuffer)))));
+        });
+        Promise.all(promises).then(() => this.#addEvent(new Inputs.Event.Insert(items)));
+    });
+    requestFile = types => this.#showFileInput(types, false, false);
+    requestFiles = types => this.#showFileInput(types, true, false);
+    requestFolder = types => this.#showFileInput(types, false, true);
 
     remove = () => {
         // Keyboard
@@ -499,6 +576,42 @@ Inputs.Event.Abort = class AbortInputEvent extends Inputs.Event {
         return new Inputs.Event.Abort(this.grabbed);
     }
 };
+Inputs.Event.Drop = class DropInputEvent extends Inputs.Event.Positioned {
+    constructor(pos, items) {
+        super("drop", pos);
+        this.#items = items;
+    }
+
+    #items = [];
+    get items() {
+        return this.#items;
+    }
+    set items(items) {
+        this.#items = items || [];
+    }
+
+    get copy() {
+        return new Inputs.Event.Drop(this.pos.copy, Array.from(this.items));
+    }
+};
+Inputs.Event.Insert = class InsertInputEvent extends Inputs.Event {
+    constructor(items) {
+        super("insert");
+        this.#items = items;
+    }
+
+    #items = [];
+    get items() {
+        return this.#items;
+    }
+    set items(items) {
+        this.#items = items || [];
+    }
+
+    get copy() {
+        return new Inputs.Event.Insert(Array.from(this.items));
+    }
+};
 Inputs.Event.Scroll = class ScrollInputEvent extends Inputs.Event.Positioned {
     constructor(pos, unlocked, axis) {
         super("scroll", pos);
@@ -614,4 +727,60 @@ Inputs.Event.Confirm = class ConfirmInputEvent extends Inputs.Event {
     get copy() {
         return new Inputs.Event.Confirm();
     }
+};
+
+Inputs.Item = class Item {
+    static encoder = new TextEncoder();
+    static decoder = new TextDecoder();
+
+    constructor(name) {
+        this.name = name;
+    }
+
+    #name;
+    get name() {
+        return this.#name;
+    }
+    set name(name) {
+        this.#name = `${name || ""}`;
+    }
+
+    #types = new Set();
+    get types() {
+        return this.#types;
+    }
+
+    #binary = Object.create(null);
+    binary = type => {
+        if (this.#binary[type]) {
+            return this.#binary[type];
+        } else if (this.#text[type]) {
+            return this.#binary[type] = Item.encoder.encode(this.#text[type]);
+        }
+    };
+
+    #text = Object.create(null);
+    text = type => {
+        if (this.#text[type]) {
+            return this.#text[type];
+        } else if (this.#binary[type]) {
+            return this.#text[type] = Item.decoder.decode(this.#binary[type]);
+        }
+    };
+
+    add = (type, data) => {
+        this.#types.add(type);
+        if (data instanceof Uint8Array) {
+            this.#binary[type] = data;
+        } else {
+            this.#text[type] = data;
+        }
+        return this;
+    };
+    remove = type => {
+        this.#types.delete(type);
+        delete this.#binary[type];
+        delete this.#text[type];
+        return this;
+    };
 };
