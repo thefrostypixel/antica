@@ -187,12 +187,12 @@ globalThis.Inputs = class Inputs {
             }
             return Promise.all(promises).then(() => items);
         };
-        window.addEventListener("dragover", this.#listeners.onDragOver = e => e.preventDefault());
-        window.addEventListener("drop", this.#listeners.onDrop = e => {
+        addEventListener("dragover", this.#listeners.onDragOver = e => e.preventDefault());
+        addEventListener("drop", this.#listeners.onDrop = e => {
             e.preventDefault();
             parseItems(e).then(items => this.#addEvent(new Inputs.Event.Drop(new Vec2(e.clientX, yUp ? innerHeight - e.clientY : e.clientY), items)));
         });
-        document.addEventListener("paste", this.#listeners.onPaste = e => parseItems(e).then(items => this.#addEvent(new Inputs.Event.Insert(items))));
+        addEventListener("paste", this.#listeners.onPaste = e => parseItems(e).then(items => this.#addEvent(new Inputs.Event.Insert(items))));
         this.#fileInput = document.createElement("input");
         this.#fileInput.type = "file";
         this.#fileInput.onchange = () => {
@@ -369,20 +369,23 @@ globalThis.Inputs = class Inputs {
     requestFolder = types => this.#showFileInput(types, false, true);
 
     remove = () => {
-        // Keyboard
         removeEventListener("keydown", this.#listeners.onKeyDown);
-        // Mouse
+
         removeEventListener("mousedown", this.#listeners.onMouseDown);
         removeEventListener("mouseup", this.#listeners.onMouseUp);
         removeEventListener("contextmenu", this.#listeners.onContextMenu);
         removeEventListener("mousemove", this.#listeners.onMouseMove);
         removeEventListener("wheel", this.#listeners.onWheel);
-        // Touch
+
         removeEventListener("touchstart", this.#listeners.onTouchStart);
         removeEventListener("touchend", this.#listeners.onTouchEnd);
         removeEventListener("touchcancel", this.#listeners.onTouchCancel);
         removeEventListener("touchmove", this.#listeners.onTouchMove);
-        // Window
+
+        removeEventListener("dragover", this.#listeners.onDragOver);
+        removeEventListener("drop", this.#listeners.onDrop);
+        removeEventListener("paste", this.#listeners.onPaste);
+
         removeEventListener("blur", this.#listeners.onBlur);
         removeEventListener("beforeunload", this.#listeners.onBeforeUnload);
     };
