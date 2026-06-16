@@ -4,6 +4,7 @@ allowing use, modification, and distribution without restriction,
 including commercially, and without requiring this notice.
 */
 
+// https://github.com/thefrostypixel/antica/wiki/Cache
 globalThis.Cache = class Cache {
     #cache = Object.create(null);
     #used = new Set();
