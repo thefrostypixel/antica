@@ -753,12 +753,12 @@ Inputs.Item = class Item {
         return this.#types;
     }
 
-    #binary = Object.create(null);
-    binary = type => {
-        if (this.#binary[type]) {
-            return this.#binary[type];
+    #bytes = Object.create(null);
+    bytes = type => {
+        if (this.#bytes[type]) {
+            return this.#bytes[type];
         } else if (this.#text[type]) {
-            return this.#binary[type] = Item.encoder.encode(this.#text[type]);
+            return this.#bytes[type] = Item.encoder.encode(this.#text[type]);
         }
     };
 
@@ -766,15 +766,15 @@ Inputs.Item = class Item {
     text = type => {
         if (this.#text[type]) {
             return this.#text[type];
-        } else if (this.#binary[type]) {
-            return this.#text[type] = Item.decoder.decode(this.#binary[type]);
+        } else if (this.#bytes[type]) {
+            return this.#text[type] = Item.decoder.decode(this.#bytes[type]);
         }
     };
 
     add = (type, data) => {
         this.#types.add(type);
         if (data instanceof Uint8Array) {
-            this.#binary[type] = data;
+            this.#bytes[type] = data;
         } else {
             this.#text[type] = data;
         }
@@ -782,7 +782,7 @@ Inputs.Item = class Item {
     };
     remove = type => {
         this.#types.delete(type);
-        delete this.#binary[type];
+        delete this.#bytes[type];
         delete this.#text[type];
         return this;
     };
