@@ -24,6 +24,7 @@ globalThis.Cache = class Cache {
             }
         }
         this.#used.clear();
+        return this;
     };
     clean = () => {
         for (let key in this.#cache) {
@@ -31,5 +32,6 @@ globalThis.Cache = class Cache {
             delete this.#cache[key];
         }
         this.#used.clear();
+        return this;
     };
 };
