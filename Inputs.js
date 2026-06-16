@@ -241,6 +241,18 @@ globalThis.Inputs = class Inputs {
                 item.add(file.type, new Uint8Array(await file.arrayBuffer()));
             })).then(() => this.onEvent?.(new Inputs.Event.Insert(items)));
         };
+        addEventListener("copy", this.#listeners.onCopy = e => {
+            e.preventDefault();
+            let event = new Inputs.Event.Copy(new Inputs.Item());
+            this.onEvent?.(event);
+            event.item.types.forEach(type => e.clipboardData.setData(type, event.item.text(type)));
+        });
+        addEventListener("cut", this.#listeners.onCut = e => {
+            e.preventDefault();
+            let event = new Inputs.Event.Cut(new Inputs.Item());
+            this.onEvent?.(event);
+            event.item.types.forEach(type => e.clipboardData.setData(type, event.item.text(type)));
+        });
 
         addEventListener("blur", this.#listeners.onBlur = () => {
             if (this.#down == "primary" && this.#moved && this.#grabbed) {
@@ -385,6 +397,8 @@ globalThis.Inputs = class Inputs {
         removeEventListener("dragover", this.#listeners.onDragOver);
         removeEventListener("drop", this.#listeners.onDrop);
         removeEventListener("paste", this.#listeners.onPaste);
+        removeEventListener("copy", this.#listeners.onCopy);
+        removeEventListener("cut", this.#listeners.onCut);
 
         removeEventListener("blur", this.#listeners.onBlur);
         removeEventListener("beforeunload", this.#listeners.onBeforeUnload);
@@ -615,6 +629,42 @@ Inputs.Event.Insert = class InsertInputEvent extends Inputs.Event {
         return new Inputs.Event.Insert(Array.from(this.items));
     }
 };
+Inputs.Event.Copy = class CopyInputEvent extends Inputs.Event {
+    constructor(item) {
+        super("copy");
+        this.#item = item;
+    }
+
+    #item = [];
+    get item() {
+        return this.#item;
+    }
+    set item(item) {
+        this.#item = item || [];
+    }
+
+    get copy() {
+        return new Inputs.Event.Copy(this.item.copy);
+    }
+};
+Inputs.Event.Cut = class CutInputEvent extends Inputs.Event {
+    constructor(item) {
+        super("cut");
+        this.#item = item;
+    }
+
+    #item = [];
+    get item() {
+        return this.#item;
+    }
+    set item(item) {
+        this.#item = item || [];
+    }
+
+    get copy() {
+        return new Inputs.Event.Cut(this.item.copy);
+    }
+};
 Inputs.Event.Scroll = class ScrollInputEvent extends Inputs.Event.Positioned {
     constructor(pos, unlocked, axis) {
         super("scroll", pos);
@@ -786,4 +836,31 @@ Inputs.Item = class Item {
         delete this.#text[type];
         return this;
     };
+
+    get plain() {
+        return this.text("text/plain");
+    }
+    set plain(plain) {
+        this.add("text/plain", plain);
+    }
+
+    get html() {
+        return this.text("text/html");
+    }
+    set html(html) {
+        this.add("text/html", html);
+    }
+
+    get copy() {
+        let item = new Item(this.name);
+        this.types.forEach(type => {
+            if (type in this.#bytes) {
+                item.add(type, new Uint8Array(this.#bytes[type]));
+            }
+            if (type in this.#text) {
+                item.add(type, this.#text[type]);
+            }
+        });
+        return item;
+    }
 };
