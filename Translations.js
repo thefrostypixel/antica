@@ -1,8 +1,7 @@
 /*
-This file is licensed under CC0 1.0
-(https://creativecommons.org/publicdomain/zero/1.0),
-meaning you can use, modify, and distribute it however you want,
-including commercially, and without including this license.
+This file is licensed under CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0),
+allowing use, modification, and distribution without restriction,
+including commercially, and without requiring this notice.
 */
 
 globalThis.Translations = class Translations {
