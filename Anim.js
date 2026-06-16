@@ -4,6 +4,7 @@ allowing use, modification, and distribution without restriction,
 including commercially, and without requiring this notice.
 */
 
+// https://github.com/thefrostypixel/antica/wiki/Anim
 globalThis.Anim = class Anim {
     constructor(axes = 0 ?? {}, accel = 10000, time) {
         this.axes = axes;
