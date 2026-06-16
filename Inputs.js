@@ -15,22 +15,24 @@ globalThis.Inputs = class Inputs {
 
         addEventListener("keydown", this.#listeners.onKeyDown = e => {
             if (e.code == "ArrowLeft") {
-                this.#addEvent(new Inputs.Event.Left(this.yUp));
+                this.onEvent?.(new Inputs.Event.Left(this.yUp));
             } else if (e.code == "ArrowRight") {
-                this.#addEvent(new Inputs.Event.Right(this.yUp));
+                this.onEvent?.(new Inputs.Event.Right(this.yUp));
             } else if (e.code == "ArrowUp") {
-                this.#addEvent(new Inputs.Event.Up(this.yUp));
+                this.onEvent?.(new Inputs.Event.Up(this.yUp));
             } else if (e.code == "ArrowDown") {
-                this.#addEvent(new Inputs.Event.Down(this.yUp));
+                this.onEvent?.(new Inputs.Event.Down(this.yUp));
             } else if (e.code == "Escape") {
                 if (this.#moved) {
-                    this.#addEvent(new Inputs.Event.Abort());
+                    if (this.#grabbed) {
+                        this.onEvent?.(new Inputs.Event.Abort());
+                    }
                     this.#down = this.#lastDown = "";
                 } else {
-                    this.#addEvent(new Inputs.Event.Escape());
+                    this.onEvent?.(new Inputs.Event.Escape());
                 }
             } else if (e.code == "Enter" || e.code == "Space") {
-                this.#addEvent(new Inputs.Event.Confirm());
+                this.onEvent?.(new Inputs.Event.Confirm());
             }
         });
 
@@ -46,13 +48,13 @@ globalThis.Inputs = class Inputs {
                 this.#lastDown = this.#down;
                 this.#pos.set(this.#startPos.set(pos));
                 this.#moved = false;
-                this.#addEvent(new Inputs.Event[this.#down == "primary" ? "Primary" : "Secondary"](pos, this.#consecutive));
+                this.onEvent?.(new Inputs.Event[this.#down == "primary" ? "Primary" : "Secondary"](pos, this.#consecutive));
             }
         });
         addEventListener("mouseup", this.#listeners.onMouseUp = e => {
             if (e.button == 0 && this.#down == "primary" || e.button == 2 && this.#down == "secondary") {
-                if (this.#down == "primary" && this.#moved) {
-                    this.#addEvent(new Inputs.Event.Release(this.#pos.copy, this.#startPos.copy));
+                if (this.#down == "primary" && this.#moved && this.#grabbed) {
+                    this.onEvent?.(new Inputs.Event.Release(this.#pos.copy, this.#startPos.copy));
                 }
                 this.#down = "";
                 this.#lastUpTime = this.#t;
@@ -63,19 +65,34 @@ globalThis.Inputs = class Inputs {
             if (this.#down == "primary") {
                 let pos = new Vec2(e.clientX, yUp ? innerHeight - e.clientY : e.clientY);
                 if (this.#moved || this.mouseSlop < this.#pos.dist(pos)) {
-                    if (!this.#moved) {
-                        this.#addEvent(new Inputs.Event.Grab(this.#pos.copy));
+                    if (this.#moved) {
+                        let e = new Inputs.Event.Grab(this.#pos.copy);
+                        this.onEvent?.(e);
+                        if (e.type == "grab") {
+                            this.#grabbed = this.#dragging = e.grabbed;
+                            this.#scrollAxis = "";
+                        }
                         this.#moved = true;
                         this.#consecutive = 0;
                     }
-                    this.#addEvent({type: "move", pos: pos.copy, lastPos: this.#pos.copy, startPos: this.#startPos.copy});
+                    if (this.#grabbed) {
+                        let e = new Inputs.Event.Drag(pos.copy, this.#pos.copy, this.#startPos.copy);
+                        this.onEvent?.(e);
+                        this.#grabbed = e.grabbed;
+                    }
                     this.#pos.set(pos);
                 }
             }
         });
         addEventListener("wheel", this.#listeners.onWheel = e => {
             if (this.element.contains(e.target)) {
-                this.#addEvent({type: "scroll", delta: new Vec2(e.deltaX || 0, (yUp ? -e.deltaY : e.deltaY) || 0), startPos: new Vec2(e.clientX, yUp ? innerHeight - e.clientY : e.clientY), t: this.#t});
+                if (!this.#scrollAxis || this.#lastScroll + this.scrollLockDuration < this.#t) {
+                    this.#scrollAxis = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? "x" : "y";
+                }
+                if (this.#scrollAxis == "x" ? e.deltaX : yUp ? -e.deltaY : e.deltaY) {
+                    this.#lastScroll = this.#t;
+                }
+                this.onEvent?.(new Inputs.Event.Scroll(new Vec2(e.clientX, yUp ? innerHeight - e.clientY : e.clientY), new Vec2(e.deltaX || 0, (yUp ? -e.deltaY : e.deltaY) || 0), this.#scrollAxis));
             }
         });
 
@@ -101,7 +118,7 @@ globalThis.Inputs = class Inputs {
                                 this.#consecutive = 1;
                             }
                             this.#lastDown = "secondary";
-                            this.#addEvent(new Inputs.Event.Secondary(this.#pos.copy, this.#consecutive));
+                            this.onEvent?.(new Inputs.Event.Secondary(this.#pos.copy, this.#consecutive));
                         }
                     }, this.holdTime);
                 }
@@ -111,7 +128,9 @@ globalThis.Inputs = class Inputs {
             let touch = Array.from(e.changedTouches).find(touch => this.#down == `touch ${touch.identifier}`);
             if (touch) {
                 if (this.#moved) {
-                    this.#addEvent(new Inputs.Event.Release(this.#pos.copy, this.#startPos.copy));
+                    if (this.#grabbed) {
+                        this.onEvent?.(new Inputs.Event.Release(this.#pos.copy, this.#startPos.copy));
+                    }
                 } else if (!this.#downBecameSecondary) {
                     if (this.#lastDown == "primary" && this.#downTime <= this.#lastUpTime + this.repeatTime) {
                         this.#consecutive++;
@@ -119,7 +138,7 @@ globalThis.Inputs = class Inputs {
                         this.#consecutive = 1;
                     }
                     this.#lastDown = "primary";
-                    this.#addEvent(new Inputs.Event.Primary(this.#pos.copy, this.#consecutive));
+                    this.onEvent?.(new Inputs.Event.Primary(this.#pos.copy, this.#consecutive));
                 }
                 this.#down = "";
                 this.#lastUpTime = this.#t;
@@ -128,7 +147,9 @@ globalThis.Inputs = class Inputs {
         addEventListener("touchcancel", this.#listeners.onTouchCancel = e => {
             let touch = Array.from(e.changedTouches).find(touch => this.#down == `touch ${touch.identifier}`);
             if (touch && this.#moved) {
-                this.#addEvent(new Inputs.Event.Abort());
+                if (this.#grabbed) {
+                    this.onEvent?.(new Inputs.Event.Abort());
+                }
                 this.#down = this.#lastDown = "";
             }
         });
@@ -138,11 +159,28 @@ globalThis.Inputs = class Inputs {
                 let pos = new Vec2(touch.clientX, yUp ? innerHeight - touch.clientY : touch.clientY);
                 if (this.#moved || this.touchSlop < this.#pos.dist(pos)) {
                     if (!this.#moved) {
-                        this.#addEvent(new Inputs.Event.Grab(this.#pos.copy));
+                        let e = new Inputs.Event.Grab(this.#pos.copy);
+                        this.onEvent?.(e);
+                        if (e.type == "grab") {
+                            this.#grabbed = this.#dragging = e.grabbed;
+                            this.#scrollAxis = "";
+                        }
                         this.#moved = true;
                         this.#consecutive = 0;
                     }
-                    this.#addEvent({type: "move/scroll", pos: pos.copy, lastPos: this.#pos.copy, startPos: this.#startPos.copy, t: this.#t});
+                    if (this.#grabbed) {
+                        let e = new Inputs.Event.Drag(pos.copy, this.#pos.copy, this.#startPos.copy, this.#grabbed);
+                        this.onEvent?.(e);
+                        this.#grabbed = e.grabbed;
+                    } else if (!this.#dragging) {
+                        if (!this.#scrollAxis || this.#lastScroll + this.scrollLockDuration < this.#t) {
+                            this.#scrollAxis = Math.abs(this.#pos.x - pos.x) > Math.abs(this.#pos.y - pos.y) ? "x" : "y";
+                        }
+                        if (this.#pos[this.#scrollAxis] - pos[this.#scrollAxis]) {
+                            this.#lastScroll = this.#t;
+                        }
+                        this.onEvent?.(new Inputs.Event.Scroll(this.#startPos.copy, this.#pos.copy.sub(pos), this.#scrollAxis));
+                    }
                     this.#pos.set(pos);
                 }
             }
@@ -190,9 +228,9 @@ globalThis.Inputs = class Inputs {
         addEventListener("dragover", this.#listeners.onDragOver = e => e.preventDefault());
         addEventListener("drop", this.#listeners.onDrop = e => {
             e.preventDefault();
-            parseItems(e).then(items => this.#addEvent(new Inputs.Event.Drop(new Vec2(e.clientX, yUp ? innerHeight - e.clientY : e.clientY), items)));
+            parseItems(e).then(items => this.onEvent?.(new Inputs.Event.Drop(new Vec2(e.clientX, yUp ? innerHeight - e.clientY : e.clientY), items)));
         });
-        addEventListener("paste", this.#listeners.onPaste = e => parseItems(e).then(items => this.#addEvent(new Inputs.Event.Insert(items))));
+        addEventListener("paste", this.#listeners.onPaste = e => parseItems(e).then(items => this.onEvent?.(new Inputs.Event.Insert(items))));
         this.#fileInput = document.createElement("input");
         this.#fileInput.type = "file";
         this.#fileInput.onchange = () => {
@@ -201,12 +239,12 @@ globalThis.Inputs = class Inputs {
                 let item = new Inputs.Item(file.webkitRelativePath || file.name);
                 items.push(item);
                 item.add(file.type, new Uint8Array(await file.arrayBuffer()));
-            })).then(() => this.#addEvent(new Inputs.Event.Insert(items)));
+            })).then(() => this.onEvent?.(new Inputs.Event.Insert(items)));
         };
 
         addEventListener("blur", this.#listeners.onBlur = () => {
-            if (this.#down == "primary" && this.#moved) {
-                this.#addEvent(new Inputs.Event.Abort());
+            if (this.#down == "primary" && this.#moved && this.#grabbed) {
+                this.onEvent?.(new Inputs.Event.Abort());
             }
             this.#down = this.#lastDown = "";
         });
@@ -274,58 +312,20 @@ globalThis.Inputs = class Inputs {
     #pos = new Vec2();
     #startPos = new Vec2();
     #moved = false;
-    #consecutive = 0;
-    #downBecameSecondary = false;
-    #events = [];
-    #addEvent = e => {
-        this.#events.push(e);
-        if (this.eventAvailable) {
-            this.onEventAvailable?.(this);
-        }
-    };
-
-    #lastEvent;
     #grabbed;
     #dragging;
+    #consecutive = 0;
+    #downBecameSecondary = false;
     #scrollAxis = "";
     #lastScroll = 0;
-    onEventAvailable;
-    get eventAvailable() {
-        if (this.#lastEvent?.type == "grab") {
-            this.#grabbed = this.#dragging = this.#lastEvent.grabbed;
-            this.#scrollAxis = "";
-        } else if (this.#lastEvent?.type == "drag") {
-            this.#grabbed = this.#lastEvent.grabbed;
-        }
-        while ((this.#events[0]?.type == "move" || this.#events[0]?.type == "release" || this.#events[0]?.type == "abort") && !this.#grabbed) {
-            this.#events.shift();
-        }
-        return this.#events.length;
+
+    #onEvent;
+    get onEvent() {
+        return this.#onEvent;
     }
-    nextEvent = () => {
-        if (this.eventAvailable) {
-            let event = this.#events.shift();
-            if (event.type == "move" || event.type == "move/scroll") {
-                if (this.#grabbed) {
-                    event = new Inputs.Event.Drag(event.pos, event.lastPos, event.startPos);
-                } else if (!this.#dragging) {
-                    event.type = "scroll";
-                    event.delta = event.lastPos.sub(event.pos);
-                }
-            }
-            if (event.type == "scroll") {
-                if (!this.#scrollAxis || this.#lastScroll + this.scrollLockDuration < event.t) {
-                    this.#scrollAxis = Math.abs(event.delta.x) > Math.abs(event.delta.y) ? "x" : "y";
-                }
-                if (event.delta[this.#scrollAxis]) {
-                    this.#lastScroll = event.t;
-                }
-                event = new Inputs.Event.Scroll(event.startPos, event.delta, this.#scrollAxis);
-            }
-            this.#lastEvent = event;
-            return event;
-        }
-    };
+    set onEvent(onEvent) {
+        this.#onEvent = onEvent;
+    }
 
     #element = document;
     get element() {
@@ -362,7 +362,7 @@ globalThis.Inputs = class Inputs {
             items.push(item);
             entry.types.forEach(type => promises.push(entry.getType(type).then(blob => blob.arrayBuffer()).then(arrayBuffer => item.add(type, new Uint8Array(arrayBuffer)))));
         });
-        Promise.all(promises).then(() => this.#addEvent(new Inputs.Event.Insert(items)));
+        Promise.all(promises).then(() => this.onEvent?.(new Inputs.Event.Insert(items)));
     });
     requestFile = types => this.#showFileInput(types, false, false);
     requestFiles = types => this.#showFileInput(types, true, false);
