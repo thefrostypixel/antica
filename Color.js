@@ -4,7 +4,7 @@ allowing use, modification, and distribution without restriction,
 including commercially, and without requiring this notice.
 */
 
-// Using OKLab by Björn Ottosson: https://bottosson.github.io/posts/oklab
+// https://github.com/thefrostypixel/antica/wiki/Color
 globalThis.Color = class Color {
     static okLab(...okLab) {
         return new Color(...okLab);
@@ -130,7 +130,6 @@ globalThis.Color = class Color {
         return this;
     }
 
-    /** Interpolates from itself to the other color. */
     mix(other, t = .5) {
         if (this.alpha * (1 - t) + other.alpha * t) {
             this.L = (this.L * this.alpha * (1 - t) + other.L * other.alpha * t) / (this.alpha * (1 - t) + other.alpha * t);
@@ -143,7 +142,6 @@ globalThis.Color = class Color {
         return this;
     }
 
-    /** Place itself over the other color. */
     over(other) {
         let alpha = this.alpha + other.alpha * (1 - this.alpha);
         if (alpha) {
@@ -157,7 +155,6 @@ globalThis.Color = class Color {
         return this;
     }
 
-    /** Place itself under the other color. */
     under(other) {
         let alpha = this.alpha * (1 - other.alpha) + other.alpha;
         if (alpha) {
@@ -171,19 +168,16 @@ globalThis.Color = class Color {
         return this;
     }
 
-    /** Places itself when it overlaps the other color, falls back to transparency. */
     in(other) {
         this.alpha *= other.alpha;
         return this;
     }
 
-    /** Places itself when it doesn't overlap the other color, falls back to transparency. */
     out(other) {
         this.alpha *= 1 - other.alpha;
         return this;
     }
 
-    /** Places itself when it overlaps the other color, falls back to the other color. */
     atop(other) {
         if (other.alpha) {
             this.L = this.L * this.alpha + other.L * (1 - this.alpha);
@@ -194,7 +188,6 @@ globalThis.Color = class Color {
         return this;
     }
 
-    /** Places itself or the other color when they don't overlap, falls back to transparency. */
     xor(other) {
         let alpha = this.alpha * (1 - other.alpha) + other.alpha * (1 - this.alpha);
         if (alpha) {
