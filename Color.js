@@ -54,11 +54,7 @@ globalThis.Color = class Color {
         return new Color();
     }
     static int(int) {
-        if (isNaN(int)) {
-            return new Color();
-        } else {
-            return Color.sRgb((int >>> 24 & 0xFF) / 255, (int >> 16 & 0xFF) / 255, (int >> 8 & 0xFF) / 255);
-        }
+        return Color.sRgb((int >>> 24 & 0xFF) / 255, (int >> 16 & 0xFF) / 255, (int >> 8 & 0xFF) / 255, (int & 0xFF) / 255);
     }
 
     constructor(...okLab) {
