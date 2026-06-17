@@ -277,6 +277,13 @@ globalThis.ColorAnim = class ColorAnim {
         this.#anim.axes.alpha.vel = 0;
     }
 
+    get accel() {
+        return this.#anim.accel;
+    }
+    set accel(accel) {
+        this.#anim.accel = accel;
+    }
+
     get time() {
         return this.#anim.time;
     }
@@ -288,16 +295,21 @@ globalThis.ColorAnim = class ColorAnim {
         return this.#anim.timeLeft;
     }
 
-    skip(ratio = 1) {
-        this.#anim.skip(ratio);
-    }
-
     get callback() {
         return this.#anim.callback;
     }
     set callback(callback) {
         this.#anim.callback = callback;
     }
+
+    to = target => {
+        this.target = target;
+        return this;
+    };
+    skip = (ratio = 1) => {
+        this.#anim.skip(ratio);
+        return this;
+    };
 };
 
 /*
