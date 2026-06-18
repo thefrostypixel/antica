@@ -1162,4 +1162,17 @@ globalThis.Padding2 = class Padding2 {
         this.yPlus = Math.round(this.yPlus);
         return this;
     }
+
+    includeScreenInsets = () => {
+        document.documentElement.style.setProperty("--safe-area-inset-left", "env(safe-area-inset-left, 0)");
+        document.documentElement.style.setProperty("--safe-area-inset-right", "env(safe-area-inset-right, 0)");
+        document.documentElement.style.setProperty("--safe-area-inset-bottom", "env(safe-area-inset-bottom, 0)");
+        document.documentElement.style.setProperty("--safe-area-inset-top", "env(safe-area-inset-top, 0)");
+        let computed = getComputedStyle(document.documentElement);
+        this.left = Math.max(this.left, parseFloat(computed.getPropertyValue("--safe-area-inset-left")) || 0);
+        this.right = Math.max(this.right, parseFloat(computed.getPropertyValue("--safe-area-inset-right")) || 0);
+        this.bottom = Math.max(this.bottom, parseFloat(computed.getPropertyValue("--safe-area-inset-bottom")) || 0);
+        this.top = Math.max(this.top, parseFloat(computed.getPropertyValue("--safe-area-inset-top")) || 0);
+        return this;
+    };
 };
