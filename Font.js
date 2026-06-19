@@ -105,7 +105,7 @@ globalThis.Font = class Font {
     coarse = (text = "", pos = new Vec2()) => this.fine(text, pos).ceil();
 
     colorTexture = (renderer, text = "", pos = new Vec2(), pixelRatio = 1) => this.cache.use(`TextColorTexture\0${renderer.id}\0${text}\0${pos.x}\0${pos.y}\0${pixelRatio}\0${this.#cacheKey()}`, () => {
-        Font.#context.clearRect(0, 0, Font.#canvas.width = Math.ceil(pos.x + this.fine(text).xMax) * pixelRatio, Font.#canvas.height = Math.ceil(pos.y + this.fine(text).yMax) * pixelRatio);
+        Font.#context.clearRect(0, 0, Font.#canvas.width = Math.max(1, Math.ceil(pos.x + this.fine(text).xMax) * pixelRatio), Font.#canvas.height = Math.max(1, Math.ceil(pos.y + this.fine(text).yMax) * pixelRatio));
         Font.#context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
         Font.#context.font = `${this.weight ?? 400} ${this.size ?? 16}px ${this.family ?? "Helvetica"}`;
         Font.#context.fillStyle = (this.color ?? Color.okLab(.95)).hex();
@@ -113,7 +113,7 @@ globalThis.Font = class Font {
         return [renderer.texture(Font.#canvas, Renderer.TextureFormat.sRGBA), texture => texture.delete()];
     });
     monoTexture = (renderer, text = "", pos = new Vec2(), pixelRatio = 1) => this.cache.use(`TextMonoTexture\0${renderer.id}\0${text}\0${pos.x}\0${pos.y}\0${pixelRatio}\0${this.#cacheKey()}`, () => {
-        Font.#context.clearRect(0, 0, Font.#canvas.width = Math.ceil(pos.x + this.fine(text).xMax) * pixelRatio, Font.#canvas.height = Math.ceil(pos.y + this.fine(text).yMax) * pixelRatio);
+        Font.#context.clearRect(0, 0, Font.#canvas.width = Math.max(1, Math.ceil(pos.x + this.fine(text).xMax) * pixelRatio), Font.#canvas.height = Math.max(1, Math.ceil(pos.y + this.fine(text).yMax) * pixelRatio));
         Font.#context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
         Font.#context.font = `${this.weight ?? 400} ${this.size ?? 16}px ${this.family ?? "Helvetica"}`;
         Font.#context.fillStyle = "#FFF";
