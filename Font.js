@@ -79,7 +79,7 @@ globalThis.Font = class Font {
         return this;
     }
 
-    #cacheKey = () => `${this.size ?? 16}\0${this.weight ?? 400}\0${this.family ?? "Helvetica"}\0${this.color?.L ?? .95}\0${this.color?.a ?? 0}\0${this.color?.b ?? 0}\0${this.color?.alpha ?? 1}`;
+    #cacheKey = () => `${this.size ?? 16}\0${this.weight ?? 400}\0${this.family ?? "Helvetica"}\0${this.color?.L ?? .95}\0${this.color?.a ?? 0}\0${this.color?.b ?? 0}\0${this.color?.o ?? 1}`;
 
     #metrics = (text = "") => (this.cache || {use: (_, creator) => creator()[0]}).use(`TextMetrics\0${text}\0${this.#cacheKey()}`, () => {
         Font.#context.font = `${this.weight ?? 400} ${this.size ?? 16}px ${this.family ?? "Helvetica"}`;

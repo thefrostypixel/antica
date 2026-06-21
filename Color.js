@@ -59,15 +59,13 @@ globalThis.Color = class Color {
 
     constructor(...okLab) {
         if (okLab.length) {
-            let lokLab2;
             if (okLab[0] instanceof Array) {
-                lokLab2 = [okLab[0][0], okLab[0][1], okLab[0][2], okLab[0][3] ?? okLab[1]];
+                [this.L, this.a, this.b, this.o] = [okLab[0][0], okLab[0][1], okLab[0][2], okLab[0][3] ?? okLab[1]];
             } else if (typeof okLab[0] == "object") {
-                lokLab2 = [okLab[0].L, okLab[0].a, okLab[0].b, okLab[0].alpha ?? okLab[1]];
+                [this.L, this.a, this.b, this.o] = [okLab[0].L, okLab[0].a, okLab[0].b, okLab[0].o ?? okLab[1]];
             } else {
-                lokLab2 = [okLab[0], okLab[1], okLab[2], okLab[3]];
+                [this.L, this.a, this.b, this.o] = [okLab[0], okLab[1], okLab[2], okLab[3]];
             }
-            [this.L, this.a, this.b, this.alpha] = lokLab2;
         }
     }
 
@@ -101,13 +99,13 @@ globalThis.Color = class Color {
         }
     }
 
-    #alpha = 1;
-    get alpha() {
-        return this.#alpha;
+    #o = 1;
+    get o() {
+        return this.#o;
     }
-    set alpha(alpha) {
-        if (!isNaN(alpha)) {
-            this.#alpha = +alpha;
+    set o(o) {
+        if (!isNaN(o)) {
+            this.#o = +o;
         }
     }
 
@@ -115,94 +113,98 @@ globalThis.Color = class Color {
         return new Color(this);
     }
 
-    saturate(saturation = 1) {
-        if (!isNaN(saturation)) {
-            this.a *= saturation;
-            this.b *= saturation;
+    saturate(scale = 1) {
+        if (!isNaN(scale)) {
+            this.a *= scale;
+            this.b *= scale;
         }
         return this;
     }
 
-    opacity(opacity = 1) {
-        if (!isNaN(opacity)) {
-            this.alpha *= opacity;
+    opacify(scale = 1, clip = false) {
+        if (!isNaN(scale)) {
+            if (clip) {
+                this.o = Math.min(Math.max(this.o * scale, 0), clip);
+            } else {
+                this.o *= scale;
+            }
         }
         return this;
     }
 
     mix(other, t = .5) {
-        if (this.alpha * (1 - t) + other.alpha * t) {
-            this.L = (this.L * this.alpha * (1 - t) + other.L * other.alpha * t) / (this.alpha * (1 - t) + other.alpha * t);
-            this.a = (this.a * this.alpha * (1 - t) + other.a * other.alpha * t) / (this.alpha * (1 - t) + other.alpha * t);
-            this.b = (this.b * this.alpha * (1 - t) + other.b * other.alpha * t) / (this.alpha * (1 - t) + other.alpha * t);
+        if (this.o * (1 - t) + other.o * t) {
+            this.L = (this.L * this.o * (1 - t) + other.L * other.o * t) / (this.o * (1 - t) + other.o * t);
+            this.a = (this.a * this.o * (1 - t) + other.a * other.o * t) / (this.o * (1 - t) + other.o * t);
+            this.b = (this.b * this.o * (1 - t) + other.b * other.o * t) / (this.o * (1 - t) + other.o * t);
         } else {
             this.L = this.a = this.b = 0;
         }
-        this.alpha += (other.alpha - this.alpha) * t;
+        this.o += (other.o - this.o) * t;
         return this;
     }
 
     over(other) {
-        let alpha = this.alpha + other.alpha * (1 - this.alpha);
-        if (alpha) {
-            this.L = (this.L * this.alpha + other.L * other.alpha * (1 - this.alpha)) / alpha;
-            this.a = (this.a * this.alpha + other.a * other.alpha * (1 - this.alpha)) / alpha;
-            this.b = (this.b * this.alpha + other.b * other.alpha * (1 - this.alpha)) / alpha;
+        let o = this.o + other.o * (1 - this.o);
+        if (o) {
+            this.L = (this.L * this.o + other.L * other.o * (1 - this.o)) / o;
+            this.a = (this.a * this.o + other.a * other.o * (1 - this.o)) / o;
+            this.b = (this.b * this.o + other.b * other.o * (1 - this.o)) / o;
         } else {
             this.L = this.a = this.b = 0;
         }
-        this.alpha = alpha;
+        this.o = o;
         return this;
     }
 
     under(other) {
-        let alpha = this.alpha * (1 - other.alpha) + other.alpha;
-        if (alpha) {
-            this.L = (this.L * this.alpha * (1 - other.alpha) + other.L * other.alpha) / alpha;
-            this.a = (this.a * this.alpha * (1 - other.alpha) + other.a * other.alpha) / alpha;
-            this.b = (this.b * this.alpha * (1 - other.alpha) + other.b * other.alpha) / alpha;
+        let o = this.o * (1 - other.o) + other.o;
+        if (o) {
+            this.L = (this.L * this.o * (1 - other.o) + other.L * other.o) / o;
+            this.a = (this.a * this.o * (1 - other.o) + other.a * other.o) / o;
+            this.b = (this.b * this.o * (1 - other.o) + other.b * other.o) / o;
         } else {
             this.L = this.a = this.b = 0;
         }
-        this.alpha = alpha;
+        this.o = o;
         return this;
     }
 
     in(other) {
-        this.alpha *= other.alpha;
+        this.o *= other.o;
         return this;
     }
 
     out(other) {
-        this.alpha *= 1 - other.alpha;
+        this.o *= 1 - other.o;
         return this;
     }
 
     atop(other) {
-        if (other.alpha) {
-            this.L = this.L * this.alpha + other.L * (1 - this.alpha);
-            this.a = this.a * this.alpha + other.a * (1 - this.alpha);
-            this.b = this.b * this.alpha + other.b * (1 - this.alpha);
+        if (other.o) {
+            this.L = this.L * this.o + other.L * (1 - this.o);
+            this.a = this.a * this.o + other.a * (1 - this.o);
+            this.b = this.b * this.o + other.b * (1 - this.o);
         }
-        this.alpha = other.alpha;
+        this.o = other.o;
         return this;
     }
 
     xor(other) {
-        let alpha = this.alpha * (1 - other.alpha) + other.alpha * (1 - this.alpha);
-        if (alpha) {
-            this.L = (this.L * this.alpha * (1 - other.alpha) + other.L * other.alpha * (1 - this.alpha)) / alpha;
-            this.a = (this.a * this.alpha * (1 - other.alpha) + other.a * other.alpha * (1 - this.alpha)) / alpha;
-            this.b = (this.b * this.alpha * (1 - other.alpha) + other.b * other.alpha * (1 - this.alpha)) / alpha;
+        let o = this.o * (1 - other.o) + other.o * (1 - this.o);
+        if (o) {
+            this.L = (this.L * this.o * (1 - other.o) + other.L * other.o * (1 - this.o)) / o;
+            this.a = (this.a * this.o * (1 - other.o) + other.a * other.o * (1 - this.o)) / o;
+            this.b = (this.b * this.o * (1 - other.o) + other.b * other.o * (1 - this.o)) / o;
         }
-        this.alpha = alpha;
+        this.o = o;
         return this;
     }
 
     // TODO More blending functions.
 
     okLab() {
-        return {L: this.L, a: this.a, b: this.b, alpha: this.alpha};
+        return {L: this.L, a: this.a, b: this.b, o: this.o};
     }
     lRgbObj(clip = false, preMult = false) {
         let okLabToLRgb = (L, a, b) => {
@@ -219,7 +221,7 @@ globalThis.Color = class Color {
             let t = Math.max(r < 0 ? -r / (gray.r - r) : 0, r > 1 ? (1 - r) / (gray.r - r) : 0, g < 0 ? -g / (gray.g - g) : 0, g > 1 ? (1 - g) / (gray.g - g) : 0, b < 0 ? b / (gray.b - b) : 0, b > 1 ? (1 - b) / (gray.b - b) : 0);
             lRgb = {r: clamp(r + (gray.r - r) * t), g: clamp(g + (gray.g - g) * t), b: clamp(b + (gray.b - b) * t)};
         }
-        let a = clip ? clamp(this.alpha) : this.alpha;
+        let a = clip ? clamp(this.o) : this.o;
         let mult = preMult ? a : 1;
         return {r: lRgb.r * mult, g: lRgb.g * mult, b: lRgb.b * mult, a};
     }
@@ -254,27 +256,27 @@ globalThis.ColorAnim = class ColorAnim {
     }
 
     get target() {
-        return Color.okLab(this.#anim.axes.L.activeTarget, this.#anim.axes.a.activeTarget, this.#anim.axes.b.activeTarget, this.#anim.axes.alpha.activeTarget);
+        return Color.okLab(this.#anim.targets.L, this.#anim.targets.a, this.#anim.targets.b, this.#anim.targets.o);
     }
     set target(target) {
-        this.#anim.values.L = target.L;
-        this.#anim.values.a = target.a;
-        this.#anim.values.a = target.b;
-        this.#anim.values.alpha = target.alpha;
+        this.#anim.targets.L = target.L;
+        this.#anim.targets.a = target.a;
+        this.#anim.targets.a = target.b;
+        this.#anim.targets.o = target.o;
     }
 
     get value() {
-        return Color.okLab(this.#anim.values.L, this.#anim.values.a, this.#anim.values.b, this.#anim.values.alpha);
+        return Color.okLab(this.#anim.values.L, this.#anim.values.a, this.#anim.values.b, this.#anim.values.o);
     }
     set value(value) {
-        this.#anim.axes.L.values = value.L;
-        this.#anim.axes.a.values = value.a;
-        this.#anim.axes.a.values = value.b;
-        this.#anim.axes.alpha.values = value.alpha;
+        this.#anim.values.L = value.L;
+        this.#anim.values.a = value.a;
+        this.#anim.values.a = value.b;
+        this.#anim.values.o = value.o;
         this.#anim.axes.L.vel = 0;
         this.#anim.axes.a.vel = 0;
         this.#anim.axes.a.vel = 0;
-        this.#anim.axes.alpha.vel = 0;
+        this.#anim.axes.o.vel = 0;
     }
 
     get accel() {
